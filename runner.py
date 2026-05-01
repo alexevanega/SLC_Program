@@ -4,7 +4,7 @@ from engine import run_slc_workflow
 from scrubber import resolve_goalie_and_team
 
 # --- CONFIGURATION ---
-GOALIE = "Kevin Lankinen"
+GOALIE = "BRANDON BUSSI"
 g_id, team_tri = resolve_goalie_and_team(GOALIE)
 goalieNameAndId = {'name': GOALIE, 'id': g_id}
 # 1. THE SINGLE GAME RUNNER
@@ -36,7 +36,7 @@ def run_weekly_report(start_date): # e.g., "2026-01-19"
 
 # 4. THE SEASONAL RUNNER
 def run_seasonal_report():
-    """Analyzes every game in the team_tri's full season schedule[cite: 2]."""
+    """Analyzes every game in the team_tri's full season schedule"""
     print(f"--- STARTING FULL SEASON RUN FOR {goalieNameAndId['name']} ---")
     reports = harvest_full_season(team_tri, goalieNameAndId)
     generate_goalie_profile(reports)

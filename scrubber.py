@@ -18,8 +18,8 @@ def resolve_goalie_id(goalie_name):
     """
     # Encoding the filter to handle spaces/special characters
     # Logic: lastName='Bussi' and firstName='Brandon'
-    first_name = goalie_name.split(" ")[0]
-    last_name = goalie_name.split(" ")[1]
+    first_name = goalie_name.split(" ")[0].title()
+    last_name = goalie_name.split(" ")[1].title()
     expression = f"lastName='{last_name}' and firstName='{first_name}'"
     encoded_exp = urllib.parse.quote(expression)
     
@@ -43,17 +43,21 @@ import urllib.parse
 def resolve_goalie_and_team(goalie_name):
     # Standard name split
     parts = goalie_name.split(" ")
-    first_name, last_name = parts[0], parts[1]
+    first_name, last_name = parts[0].title(), parts[1].title()
     expression = f"lastName='{last_name}' and firstName='{first_name}'"
     encoded_exp = urllib.parse.quote(expression)
+    print(encoded_exp)
+    print(expression)
+    print (first_name, last_name)
     url = f"https://api.nhle.com/stats/rest/en/players?cayenneExp={encoded_exp}"
     
     try:
         response = requests.get(url)
         data = response.json()
+        print(str(data))
         
         if data and 'data' in data:
-            # Identity Check: Get the goalie ID[cite: 4]
+            # Identity Check: Get the goalie ID
             players = data['data']
             valid_goalies = [p for p in players if p.get('positionCode') == 'G']
             
@@ -172,4 +176,4 @@ def sync_season_schedule():
     except Exception as e:
         print(f"Sync failed: {e}")
 
-sync_season_schedule()
+# sync_season_schedule()
