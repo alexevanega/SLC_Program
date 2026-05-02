@@ -4,7 +4,7 @@ from engine import run_slc_workflow
 from scrubber import resolve_goalie_and_team
 
 # --- CONFIGURATION ---
-GOALIE = "BRANDON BUSSI"
+GOALIE = "Frederik Andersen"
 g_id, team_tri = resolve_goalie_and_team(GOALIE)
 goalieNameAndId = {'name': GOALIE, 'id': g_id}
 # 1. THE SINGLE GAME RUNNER
@@ -50,4 +50,4 @@ def run_custom_range_report(start_date, end_date):
 
 if __name__ == "__main__":
     
-    run_seasonal_report()
+    run_custom_range_report("2026-04-18", "2026-04-25")

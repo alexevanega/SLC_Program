@@ -87,10 +87,48 @@ def get_seasonal_stats(report_list):
     return seasonal_totals
 
 BASE_DATA_DIR = "./data/processedGames/"
+MASTER_REPORT_FILE = os.path.join(BASE_DATA_DIR, "master_report.json")
+
+def sanitize_goalie_name(goalie_name):
+    """Normalize goalie names for consistent folder and master file keys."""
+    return goalie_name.strip().replace(" ", "_").lower()
+
+def load_master_reports():
+    """Load the central master vault for all processed goalie reports."""
+    if not os.path.exists(MASTER_REPORT_FILE):
+        return {}
+
+    with open(MASTER_REPORT_FILE, 'r') as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return {}
+
+def save_master_reports(master):
+    """Persist the central master vault."""
+    if not os.path.exists(BASE_DATA_DIR):
+        os.makedirs(BASE_DATA_DIR)
+    with open(MASTER_REPORT_FILE, 'w') as f:
+        json.dump(master, f, indent=4)
+
+def save_report_to_master(report, goalie_name):
+    """Add a single report to the master file for fast lookup."""
+    if not report:
+        return None
+
+    master = load_master_reports()
+    goalie_key = sanitize_goalie_name(goalie_name)
+    if goalie_key not in master:
+        master[goalie_key] = {}
+
+    master[goalie_key][str(report['game_id'])] = report
+    save_master_reports(master)
+    return MASTER_REPORT_FILE
+
 
 def get_goalie_dir(goalie_name):
     # Sanitize the name for folder compatibility
-    folder_name = goalie_name.replace(" ", "_").lower()
+    folder_name = sanitize_goalie_name(goalie_name)
     path = os.path.join(BASE_DATA_DIR, folder_name)
     if not os.path.exists(path):
         os.makedirs(path)
@@ -106,17 +144,15 @@ def save_report_locally(report, goalie_name):
     file_path = os.path.join(goalie_dir, f"{report['game_id']}.json")
     with open(file_path, 'w') as f:
         json.dump(report, f, indent=4)
+
+    save_report_to_master(report, goalie_name)
     return file_path
 
 def load_local_report(game_id, goalie_name):
     """Checks the goalie's specific folder for a game result."""
-    goalie_dir = get_goalie_dir(goalie_name)
-    file_path = os.path.join(goalie_dir, f"{game_id}.json")
-    
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as f:
-            return json.load(f)
-    return None
+    master = load_master_reports()
+    goalie_key = sanitize_goalie_name(goalie_name)
+    return master.get(goalie_key, {}).get(str(game_id))
 
 BASELINE_VAULT = "./data/league_baselines.json"
 

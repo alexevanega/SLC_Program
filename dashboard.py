@@ -33,30 +33,51 @@ def load_goalie_data(active_goalie):
             with (folder_path / file).open('r', encoding='utf-8') as f:
                 data = json.load(f)
                 
-                # USE THE CORRECT KEYS FROM UTILITY_9.PY AND PATCH_VAULT.PY[cite: 5, 10]
+                # USE THE CORRECT KEYS FROM UTILITY_9.PY AND PATCH_VAULT.PY
                 g_id = str(data.get('game_id'))
-                # Your patch_vault.py specifically uses 'gameDate'
-                date_val = data.get('gameDate', "0000-00-00")
                 
-                matchup_str = master_map.get(g_id, f"ID: {g_id}")
+                # Extract date from master_schedule (no API call needed)
+                game_info = master_map.get(g_id, {})
+                if isinstance(game_info, dict):
+                    matchup_str = game_info.get('matchup', f"ID: {g_id}")
+                    date_val = game_info.get('date', "0000-00-00")
+                else:
+                    # Fallback for old format (string only)
+                    matchup_str = game_info if game_info else f"ID: {g_id}"
+                    date_val = data.get('gameDate', "0000-00-00")
+                
                 clean_matchup = matchup_str
+                opponent = matchup_str
 
                 # REFINED STRIPPING LOGIC[cite: 2, 7]
                 if goalie_teams and matchup_str:
                     for t_abbrev in goalie_teams:
                         t_abbrev = t_abbrev.upper()
                         if t_abbrev in matchup_str:
-                            # If goalie is VGK: "VGK @ WPG" -> "at WPG" | "WPG @ VGK" -> "vs WPG"
                             clean_matchup = matchup_str.replace(f"{t_abbrev} @", "at").replace(f"@ {t_abbrev}", "vs")
                             break
+
+                if clean_matchup.startswith("at ") or clean_matchup.startswith("vs "):
+                    opponent = clean_matchup.split(" ", 1)[1]
+                else:
+                    parts = matchup_str.split(" @ ")
+                    if len(parts) == 2 and goalie_teams:
+                        away, home = parts[0].upper(), parts[1].upper()
+                        goalies = [t.upper() for t in goalie_teams]
+                        if away in goalies:
+                            opponent = home
+                        elif home in goalies:
+                            opponent = away
 
                 all_games.append({
                     "Date": date_val,
                     "Matchup": clean_matchup,
+                    "Opponent": opponent,
                     "SLC": float(data.get('total', {}).get('score', 0))
                 })
                 
     return pd.DataFrame(all_games).sort_values("Date")
+
 
 st.title("Systemic Goalie Audit")
 active_goalie = None
@@ -69,6 +90,10 @@ if active_goalie:
     df = load_goalie_data(active_goalie)
     if not df.empty:
         st.metric(f"Season Average: {active_goalie}", f"{df['SLC'].mean():.3f}")
-        fig = px.line(df, x="Matchup", y="SLC", markers=True, hover_data=["Date"])
+        # Add absolute SLC for sizing (since size can't be negative)
+        df['SLC_Abs'] = df['SLC'].abs()
+        fig = px.scatter(df, x="Date", y="SLC", color="Opponent", size="SLC_Abs", 
+                         hover_data=["Matchup", "Opponent"],
+                         labels={"SLC": "Systemic Lineup Credit"})
         fig.add_hline(y=0, line_dash="dash", line_color="red")
         st.plotly_chart(fig, use_container_width=True)

@@ -24,6 +24,7 @@ def run_slc_workflow(goalieNameAndId, team_tri, game_date):
     # Check if we have already crunched the numbers for this Game ID
     existing_report = load_local_report(m_id, goalieNameAndId['name'])
     if existing_report:
+        print('REPORT FOUND IN VAULT: Returning cached result.')
         # Return immediately if found - total bypass of API and Pandas
         return existing_report
     

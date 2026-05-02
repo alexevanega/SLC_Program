@@ -93,24 +93,32 @@ def resolve_goalie_and_team(goalie_name):
 
 def resolve_game_id(team_tri, date_str):
     """
-    Translates Team (e.g., 'BOS') and Date ('YYYY-MM-DD') into Game ID
-    using the highly targeted Weekly Schedule endpoint.
+    Translates Team(s) (e.g., 'BOS' or ['BOS', 'CBJ']) and Date ('YYYY-MM-DD') into Game ID.
+    If the goalie has multiple team abbreviations, this will try each candidate until it
+    finds a matching game for the requested date.
     """
-    url = f"https://api-web.nhle.com/v1/club-schedule/{team_tri}/week/{date_str}"
-    
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        
-        # This endpoint returns a 'games' list for that specific week
-        for game in data.get('games', []):
-            if game.get('gameDate') == date_str:
-                return game.get('id')
-                
-        print(f"!! No game found for {team_tri} on {date_str} in that week's schedule.")
-    except Exception as e:
-        print(f"Error resolving Game via Weekly Schedule: {e}")
+    if not team_tri:
+        return None
+
+    candidate_teams = team_tri if isinstance(team_tri, (list, tuple)) else [team_tri]
+    for team in candidate_teams:
+        url = f"https://api-web.nhle.com/v1/club-schedule/{team}/week/{date_str}"
+        print(f"Checking schedule for {team}: {url}")
+
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            for game in data.get('games', []):
+                if game.get('gameDate') == date_str:
+                    return game.get('id')
+
+            print(f"!! No game found for {team} on {date_str} in that week's schedule.")
+        except Exception as e:
+            print(f"Warning: schedule lookup failed for {team} on {date_str}: {e}")
+            continue
+
     return None
 
 def get_baseline_for_date(game_date, season_id="20252026"):
@@ -155,25 +163,54 @@ def get_baseline_for_date(game_date, season_id="20252026"):
     return rolling_avg
 
 def sync_season_schedule():
-    # Fetching the entire season range to avoid "Unknown" games
-    url = "https://statsapi.web.nhl.com/api/v1/schedule?season=20252026"
+    """
+    Fetches full season schedule using nhlpy client.
+    Uses team_season_schedule for each team, deduplicates games by ID.
+    Much more reliable than the old statsapi endpoint.
+    """
+    from nhlpy import NHLClient
+    
+    # All NHL teams (2025-2026 season)
+    TEAMS = [
+        "NJD", "NYI", "NYR", "PHI", "PIT", "BOS", "BUF", "MTL", "OTT", "TOR", 
+        "CAR", "FLA", "TBL", "WSH", "CHI", "DET", "NSH", "STL", "CGY", "COL", 
+        "EDM", "VAN", "ANA", "DAL", "LAK", "SJS", "CBJ", "MIN", "WPG", "ARI", 
+        "VGK", "SEA", "UTA"
+    ]
+    
     master_map = {}
+    client = NHLClient()
+    season = "20252026"
     
     try:
-        response = requests.get(url)
-        data = response.json()
-        # The NHL API organizes by day/week
-        for week in data.get('gameWeek', []):
-            for game in week.get('games', []):
-                g_id = str(game.get('id'))
-                away = game.get('awayTeam', {}).get('abbrev')
-                home = game.get('homeTeam', {}).get('abbrev')
-                master_map[g_id] = f"{away} @ {home}"
+        for team in TEAMS:
+            try:
+                result = client.schedule.team_season_schedule(team, season)
+                if 'games' in result:
+                    for game in result['games']:
+                        g_id = str(game.get('id'))
+                        away = game.get('awayTeam', {}).get('abbrev')
+                        home = game.get('homeTeam', {}).get('abbrev')
+                        game_date = game.get('gameDate')
+                        
+                        # Deduplicate: each game appears twice (once per team), keep first occurrence
+                        if g_id not in master_map:
+                            master_map[g_id] = {
+                                "matchup": f"{away} @ {home}",
+                                "date": game_date
+                            }
+                
+                print(f"  ✓ {team}")
+            except Exception as e:
+                print(f"  ✗ {team}: {e}")
+                continue
         
         with open("./data/schedule/master_schedule.json", "w") as f:
             json.dump(master_map, f, indent=4)
-        print("Success: master_schedule.json created.")
+        print(f"\nSuccess: master_schedule.json created with {len(master_map)} unique games.")
     except Exception as e:
         print(f"Sync failed: {e}")
+        raise
+
 
 # sync_season_schedule()

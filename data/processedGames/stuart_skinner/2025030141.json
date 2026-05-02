@@ -1,0 +1,64 @@
+{
+    "game_id": 2025030141,
+    "goalie_id": 8479973,
+    "periods": {
+        "1": {
+            "score": 11.733,
+            "stats": {
+                "S_saves": 9,
+                "S_goals": 0,
+                "NPW": 4,
+                "iTkA": 0,
+                "iGvA": 0,
+                "UA": 0,
+                "RP": 1,
+                "iGvA_SH": 0
+            },
+            "tax": 2.0,
+            "service": 4
+        },
+        "2": {
+            "score": -3.886,
+            "stats": {
+                "S_saves": 6,
+                "S_goals": 1,
+                "NPW": 0,
+                "iTkA": 0,
+                "iGvA": 0,
+                "UA": 1,
+                "RP": 0,
+                "iGvA_SH": 0
+            },
+            "tax": 1.0,
+            "service": 0
+        },
+        "3": {
+            "score": -39.6,
+            "stats": {
+                "S_saves": 2,
+                "S_goals": 2,
+                "NPW": 0,
+                "iTkA": 0,
+                "iGvA": 0,
+                "UA": 1,
+                "RP": 0,
+                "iGvA_SH": 0
+            },
+            "tax": 1.0,
+            "service": 0
+        }
+    },
+    "total": {
+        "score": -3.8,
+        "stats": {
+            "S_saves": 17,
+            "S_goals": 3,
+            "NPW": 4,
+            "iTkA": 0,
+            "iGvA": 0,
+            "UA": 2,
+            "RP": 1,
+            "iGvA_SH": 0
+        }
+    }
+}
