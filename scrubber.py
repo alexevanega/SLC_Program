@@ -1,6 +1,9 @@
 import requests
+import numpy as np
+import os
 import json
 import urllib.parse
+from pathlib import Path
 from utility import gain_local_baseline, dump_local_baseline
 
 TEAM_MAP = {
@@ -212,5 +215,27 @@ def sync_season_schedule():
         print(f"Sync failed: {e}")
         raise
 
-
-# sync_season_schedule()
+def get_player_metadata(goalie_id):
+    """
+    Fetches biological data from the NHL API and uses local headshots.
+    """
+    headshot_path = Path("./data/headshots") / f"{goalie_id}.webp"
+    img_path = str(headshot_path) if headshot_path.exists() else None
+    
+    # Metadata API Endpoint
+    api_url = f"https://api-web.nhle.com/v1/player/{goalie_id}/landing"
+    
+    try:
+        response = requests.get(api_url)
+        data = response.json()
+        
+        return {
+            "height": f"{data.get('heightInInches', 0) // 12}'{data.get('heightInInches', 0) % 12}\"",
+            "weight": f"{data.get('weightInPounds', 0)} lbs",
+            "age": data.get('birthDate', "N/A"),
+            "team": data.get('currentTeamAbbrev', "N/A"),
+            "image": img_path,
+            "position": "G"
+        }
+    except:
+        return {"height": "N/A", "weight": "N/A", "age": "N/A", "team": "N/A", "image": img_path}

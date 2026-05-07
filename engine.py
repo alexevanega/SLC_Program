@@ -1,7 +1,7 @@
 # Import specialized arms
-from scrubber import resolve_game_id, get_baseline_for_date
+from scrubber import resolve_game_id
 from slc_by_period_progression import analyze_progression_from_raw
-from utility import fetch_and_vault_raw_data, load_local_report,save_report_locally
+from utility import fetch_and_vault_raw_data, load_local_report, save_report_locally
 
 def run_slc_workflow(goalieNameAndId, team_tri, game_date):
     """
@@ -30,11 +30,17 @@ def run_slc_workflow(goalieNameAndId, team_tri, game_date):
     
     # DUMP AND GAIN: Get the raw mass of data for the game
     raw_game_data = fetch_and_vault_raw_data(m_id)
+    if not raw_game_data or not raw_game_data.get('plays'):
+        state = raw_game_data.get('gameState', 'unknown') if isinstance(raw_game_data, dict) else 'unknown'
+        print(f"Workflow Aborted: Game ID {m_id} has no play-by-play available yet. State: {state}.")
+        return None
     
     # ANALYZE: Pass the raw data and goalie ID to the progression logic
     # This logic now extracts ONLY what it needs for this specific goalie
-    xS_baseline = get_baseline_for_date(game_date)
-    report_data = analyze_progression_from_raw(raw_game_data, goalieNameAndId['id'], xS_baseline)
+    report_data = analyze_progression_from_raw(raw_game_data, goalieNameAndId['id'])
+    if not report_data:
+        print(f"Workflow Aborted: Could not analyze Game ID {m_id}.")
+        return None
 
     # Only print the report if there is active data to show
     total_activity = report_data['total']['stats']['S_saves'] + report_data['total']['stats']['S_goals']

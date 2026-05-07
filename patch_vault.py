@@ -3,6 +3,7 @@ import json
 import requests
 
 VAULT_PATH = "./data/processedGames/"
+MASTER_REPORT_FILE = os.path.join(VAULT_PATH, "master_report.json")
 # Using a broader range to ensure no "Unknowns" for the 25-26 season
 SCHEDULE_URL = "https://api-web.nhle.com/v1/schedule/2025-10-01"
 
@@ -26,31 +27,30 @@ def patch_system():
         print(f"Failed to fetch schedule: {e}")
         return
 
-    # 2. Patch the 68 Goalie Folders
-    print("Patching JSON files in vault...")
-    goalie_folders = [d for d in os.listdir(VAULT_PATH) if os.path.isdir(os.path.join(VAULT_PATH, d))]
-    
-    for folder in goalie_folders:
-        folder_path = os.path.join(VAULT_PATH, folder)
-        for file in os.listdir(folder_path):
-            if file.endswith(".json"):
-                file_path = os.path.join(folder_path, file)
-                
-                with open(file_path, 'r') as f:
-                    game_data = json.load(f)
-                
-                g_id = str(game_data.get('game_id'))
-                
-                # If we find a match in our master map, inject it
-                if g_id in master_map:
-                    game_data['matchup'] = master_map[g_id]['label']
-                    game_data['gameDate'] = master_map[g_id]['date']
-                    
-                    # Write the corrected data back to the local SSD
-                    with open(file_path, 'w') as f:
-                        json.dump(game_data, f, indent=4)
+    # 2. Patch the master report only.
+    print("Patching master report...")
+    if not os.path.exists(MASTER_REPORT_FILE):
+        print("No master_report.json found.")
+        return
 
-    print("Patch Complete. Your vault is now UI-Ready.")
+    with open(MASTER_REPORT_FILE, 'r', encoding='utf-8') as f:
+        master_report = json.load(f)
+
+    patched = 0
+    for goalie_games in master_report.values():
+        for game_data in goalie_games.values():
+            g_id = str(game_data.get('game_id'))
+            if g_id not in master_map:
+                continue
+
+            game_data['matchup'] = master_map[g_id]['label']
+            game_data['gameDate'] = master_map[g_id]['date']
+            patched += 1
+
+    with open(MASTER_REPORT_FILE, 'w', encoding='utf-8') as f:
+        json.dump(master_report, f, indent=4)
+
+    print(f"Patch Complete. Updated {patched} master report entries.")
 
 if __name__ == "__main__":
     patch_system()
