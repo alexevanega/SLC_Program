@@ -1277,6 +1277,64 @@ if update_requested:
 leaderboard = build_phase_leaderboard(game_phase, min_gp=1)
 goalie_list = sorted(leaderboard["Goalie"].tolist()) if not leaderboard.empty else ["No goalies available"]
 
+st.header(f"Goalie Audit: {game_phase}")
+
+if leaderboard.empty:
+    st.warning(f"No goalie metadata is available for {game_phase.lower()} games.")
+else:
+    selected_goalie = st.selectbox("Select goalie", goalie_list)
+    goalie_key = selected_goalie.lower().replace(" ", "_")
+    goalie_df = filter_by_game_phase(load_goalie_data(goalie_key), game_phase)
+
+    if goalie_df.empty:
+        st.warning(f"No game history found for {selected_goalie}.")
+    else:
+        goalie_row = leaderboard[leaderboard["Goalie"] == selected_goalie].iloc[0]
+
+        st.subheader("Score")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Avg SLC", f"{goalie_row['Avg_SLC']:.3f}")
+        c2.metric("Total SLC", f"{goalie_row['Total_SLC']:.3f}")
+        c3.metric("Sovereignty", f"{goalie_row['Sovereignty']:.3f}")
+        c4.metric("Games", int(goalie_row["GP"]))
+
+        st.subheader("Ingredients")
+        ingredient_rows = pd.DataFrame([
+            {
+                "Ingredient": "Service",
+                "Value": goalie_row["Service"],
+                "Meaning": "Clean resets and useful goalie actions",
+            },
+            {
+                "Ingredient": "Tax",
+                "Value": goalie_row["Tax"],
+                "Meaning": "Rebounds, uncleared saves, giveaways, pressure cost",
+            },
+            {
+                "Ingredient": "Net Load",
+                "Value": goalie_row["Net_Load"],
+                "Meaning": "Service minus tax",
+            },
+            {
+                "Ingredient": "Reset Ratio",
+                "Value": goalie_row["Reset_Ratio"],
+                "Meaning": "How often the goalie ended pressure cleanly",
+            },
+        ])
+        st.dataframe(ingredient_rows, width="stretch", hide_index=True)
+
+        st.subheader("Games")
+        game_history_columns = [
+            "Date", "Matchup", "SLC", "Sovereignty",
+            "Net_Load", "Service", "Tax", "NPW", "UA", "RP",
+        ]
+        st.dataframe(
+            goalie_df.sort_values("Date", ascending=False)[game_history_columns],
+            width="stretch",
+        )
+
+st.stop()
+
 tab_rank, tab_audit, tab_compare, tab_team = st.tabs(["Rankings", "Individual Audit", "Dual-Goalie Comparison", "Team Redline"])
 
 with tab_rank:
