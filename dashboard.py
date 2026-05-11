@@ -23,6 +23,7 @@ from utility import (
     build_high_interest_loan_data,
     build_slc_hypothesis_data,
     calculate_service_tax,
+    current_report_score,
     get_available_teams,
     get_team_games,
     get_team_sequence_data,
@@ -211,7 +212,7 @@ def _add_report_to_leaderboard_stats(cumulative_stats, data):
     stats = total.get("stats", {})
 
     cumulative_stats["GP"] += 1
-    cumulative_stats["Total_SLC"] += total.get("score", 0)
+    cumulative_stats["Total_SLC"] += current_report_score(data)
     cumulative_stats["S_saves"] += stats.get("S_saves", 0)
     cumulative_stats["S_goals"] += stats.get("S_goals", 0)
     cumulative_stats["NPW"] += stats.get("NPW", 0)
@@ -940,7 +941,7 @@ def build_team_summary_table(game_phase, data_version):
             service, tax = calculate_service_tax(stats, include_baseline=True)
 
             team_stats[team]["GP"] += 1
-            team_stats[team]["SLC"] += total.get("score", 0)
+            team_stats[team]["SLC"] += current_report_score(report)
             team_stats[team]["S_saves"] += stats.get("S_saves", 0)
             team_stats[team]["S_goals"] += stats.get("S_goals", 0)
             team_stats[team]["xS"] += stats.get("xS", 0)

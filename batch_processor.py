@@ -1,6 +1,7 @@
 import requests # type: ignore 
 from engine import run_slc_workflow
 from datetime import datetime, timedelta
+from utility import current_report_score
 
 def harvest_full_season(team_list, goalieNameAndId):
     # Ensure team_list is handled as a list
@@ -64,7 +65,7 @@ def generate_goalie_profile(reports):
     game_count = len(reports)
     
     for r in reports:
-        total_slc += r['total']['score']
+        total_slc += current_report_score(r)
         total_saves += r['total']['stats']['S_saves']
         total_goals += r['total']['stats']['S_goals']
     

@@ -3,7 +3,13 @@ from datetime import datetime
 from pathlib import Path
 
 from slc_by_period_progression import analyze_progression_from_raw
-from utility import MASTER_REPORT_FILE, RAW_DATA_DIR, load_master_reports, save_master_reports
+from utility import (
+    MASTER_REPORT_FILE,
+    RAW_DATA_DIR,
+    load_master_reports,
+    prepare_report_for_master,
+    save_master_reports,
+)
 
 
 def rebuild_master_report():
@@ -34,7 +40,7 @@ def rebuild_master_report():
             goalie_id = old_report.get("goalie_id")
 
             if not raw_path.exists():
-                rebuilt_master[goalie_key][game_id] = old_report
+                rebuilt_master[goalie_key][game_id] = prepare_report_for_master(old_report)
                 skipped_missing_raw += 1
                 print(f"Missing raw game {game_id}; keeping existing report for {goalie_key}.")
                 continue
@@ -44,14 +50,14 @@ def rebuild_master_report():
 
             rebuilt_report = analyze_progression_from_raw(raw_game, goalie_id)
             if not rebuilt_report:
-                rebuilt_master[goalie_key][game_id] = old_report
+                rebuilt_master[goalie_key][game_id] = prepare_report_for_master(old_report)
                 skipped_unusable += 1
                 print(f"Could not rebuild game {game_id}; keeping existing report for {goalie_key}.")
                 continue
 
             rebuilt_report["gameDate"] = old_report.get("gameDate") or raw_game.get("gameDate")
 
-            rebuilt_master[goalie_key][game_id] = rebuilt_report
+            rebuilt_master[goalie_key][game_id] = prepare_report_for_master(rebuilt_report)
             rebuilt += 1
 
     save_master_reports(rebuilt_master)

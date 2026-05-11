@@ -10,6 +10,7 @@ from utility import (
     SCHEDULE_FILE,
     fetch_and_vault_raw_data,
     load_master_reports,
+    prepare_report_for_master,
     save_master_reports,
     sanitize_goalie_name,
 )
@@ -211,7 +212,7 @@ def update_local_data(season="now", game_type=2, local_raw_only=False):
                 continue
 
             report["gameDate"] = game.get("gameDate")
-            master.setdefault(goalie_key, {})[str(game_id)] = report
+            master.setdefault(goalie_key, {})[str(game_id)] = prepare_report_for_master(report)
             processed_reports += 1
             print(f"Processed {goalie_name}: {game.get('gameDate')} game {game_id}")
 

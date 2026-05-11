@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 from pathlib import Path
-from utility import calculate_service_tax
+from utility import calculate_service_tax, current_report_score
 
 MASTER_REPORT_PATH = Path("./data/processedGames/master_report.json")
 
@@ -48,7 +48,7 @@ def get_league_leaderboard(min_gp=1):
             stats = total.get('stats', {})
             
             cumulative_stats["GP"] += 1
-            cumulative_stats["Total_SLC"] += total.get('score', 0)
+            cumulative_stats["Total_SLC"] += current_report_score(data)
             cumulative_stats["S_saves"] += stats.get('S_saves', 0)
             cumulative_stats["S_goals"] += stats.get('S_goals', 0)
             cumulative_stats["NPW"] += stats.get('NPW', 0)

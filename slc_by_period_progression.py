@@ -18,6 +18,7 @@ def _empty_period_stats():
         'xG': 0.0,
         'xS': 0.0,
         'SLC_event': 0.0,
+        'Pressure_Weight': 0.0,
         'Sequences': 0,
         'Lateral_Adjustments': 0,
         'Sequence_Fatigue': 0.0,
@@ -322,6 +323,7 @@ def analyze_progression_from_raw(raw_game_data, goalie_id):
         stats['xG'] += contribution["base_xg"]
         stats['xS'] += contribution["adjusted_xs"]
         stats['SLC_event'] += contribution["slc_event"]
+        stats['Pressure_Weight'] += contribution["tax"]
         if contribution["short_handed"]:
             stats['SH_Shots'] = stats.get('SH_Shots', 0) + 1
             stats['SH_Tax'] = stats.get('SH_Tax', 0) + (contribution["tax"] - (contribution["tax"] / 1.5))
@@ -460,6 +462,7 @@ def compile_final_report(game_id, goalie_id, progression):
         p_stats['xG'] = round(float(p_stats.get('xG', 0)), 4)
         p_stats['xS'] = round(float(p_stats.get('xS', 0)), 4)
         p_stats['SLC_event'] = round(float(p_stats.get('SLC_event', 0)), 4)
+        p_stats['Pressure_Weight'] = round(float(p_stats.get('Pressure_Weight', 0)), 4)
         
         score, _ = calculate_slc_score(p_stats)
         service, tax = calculate_service_tax(p_stats)
@@ -480,6 +483,7 @@ def compile_final_report(game_id, goalie_id, progression):
     total_stats['xG'] = round(float(total_stats.get('xG', 0)), 4)
     total_stats['xS'] = round(float(total_stats.get('xS', 0)), 4)
     total_stats['SLC_event'] = round(float(total_stats.get('SLC_event', 0)), 4)
+    total_stats['Pressure_Weight'] = round(float(total_stats.get('Pressure_Weight', 0)), 4)
     total_stats['Sequence_Fatigue'] = round(float(total_stats.get('Sequence_Fatigue', 0)), 4)
     total_stats['xG_Calibration'] = round(sum(calibration_values) / len(calibration_values), 4) if calibration_values else 1.0
     final_score, _ = calculate_slc_score(total_stats)

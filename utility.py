@@ -8,6 +8,13 @@ from pathlib import Path
 # NEW VAULT PATH
 RAW_DATA_DIR = "./data/raw_games/"
 SCHEDULE_FILE = Path("./data/schedule/master_schedule.json")
+DERIVED_STAT_FIELDS = {
+    "Service_Weighted",
+    "Tax_Weighted",
+    "Reset_Component",
+    "Raw_SLC",
+    "Opportunity_Multiplier",
+}
 
 
 def _has_play_by_play_data(data):
@@ -89,31 +96,83 @@ def calculate_service_tax(stats, is_sh=False, include_baseline=False):
 
 
 def calculate_slc_score(stats, is_sh=False):
-    """Core SLC math using event-level environmental tax contributions."""
-    total_shots = stats['S_saves'] + stats['S_goals']
-    if total_shots == 0: return 0, stats
+    """Core SLC math using pressure-density scoring."""
+    score_stats = dict(stats or {})
+    total_shots = score_stats.get('S_saves', 0) + score_stats.get('S_goals', 0)
+    if total_shots == 0:
+        return 0, score_stats
 
-    service, tax = calculate_service_tax(stats, is_sh=is_sh)
-    stats['Service_Weighted'] = service
-    stats['Tax_Weighted'] = tax
-    reset_component = service / (tax + 1)
-    stats['Reset_Component'] = round(float(reset_component), 4)
+    service, reset_tax = calculate_service_tax(score_stats, is_sh=is_sh)
+    pressure_weight = float(score_stats.get('Pressure_Weight', 0) or total_shots)
+    if pressure_weight <= 0:
+        return 0, score_stats
 
-    if 'SLC_event' in stats:
-        slc = stats.get('SLC_event', 0) + reset_component
+    reset_component = service / (service + reset_tax + 1)
+    if 'SLC_event' in score_stats:
+        net_performance = score_stats.get('SLC_event', 0) + reset_component
     else:
-        expected_saves = total_shots - stats.get('xG', 0)
-        slc = (stats.get('S_saves', 0) - expected_saves) + reset_component
-    return round(float(slc), 3), stats
+        expected_saves = total_shots - score_stats.get('xG', 0)
+        net_performance = (score_stats.get('S_saves', 0) - expected_saves) + reset_component
+
+    slc = (net_performance / pressure_weight) * 10
+
+    score_stats['Service_Weighted'] = service
+    score_stats['Tax_Weighted'] = reset_tax
+    score_stats['Reset_Component'] = round(float(reset_component), 4)
+    return round(float(slc), 3), score_stats
+
+
+def strip_derived_stats(stats):
+    """Keep extracted stat fields and remove formula/display fields."""
+    return {
+        key: value
+        for key, value in (stats or {}).items()
+        if key not in DERIVED_STAT_FIELDS
+    }
+
+
+def prepare_report_for_master(report):
+    """Return a master-safe report containing base extracted stats only."""
+    if not report:
+        return report
+
+    clean_report = {
+        key: value
+        for key, value in report.items()
+        if key not in {"score", "service", "tax"}
+    }
+
+    clean_periods = {}
+    for period, period_data in report.get("periods", {}).items():
+        clean_periods[str(period)] = {
+            "stats": strip_derived_stats(period_data.get("stats", {}))
+        }
+
+    clean_report["periods"] = clean_periods
+    clean_report["total"] = {
+        "stats": strip_derived_stats(report.get("total", {}).get("stats", {}))
+    }
+    return clean_report
+
+
+def current_report_score(report):
+    """Calculate current total SLC from stored master stats."""
+    return calculate_slc_score(report.get("total", {}).get("stats", {}))[0]
+
+
+def current_period_score(report, period):
+    """Calculate current period SLC from stored master stats."""
+    stats = report.get("periods", {}).get(str(period), {}).get("stats", {})
+    return calculate_slc_score(stats)[0]
 
 def calculate_cumulative_slc(report_list):
     """Sums the total SLC scores across a list of game reports."""
-    return round(sum(report['total']['score'] for report in report_list), 3)
+    return round(sum(current_report_score(report) for report in report_list), 3)
 
 def calculate_average_slc(report_list):
     """Calculates the mean SLC score across a list of game reports."""
     if not report_list: return 0
-    total = sum(report['total']['score'] for report in report_list)
+    total = sum(current_report_score(report) for report in report_list)
     return round(total / len(report_list), 3)
 
 def get_seasonal_stats(report_list):
@@ -165,7 +224,7 @@ def save_report_to_master(report, goalie_name):
     if goalie_key not in master:
         master[goalie_key] = {}
 
-    master[goalie_key][str(report['game_id'])] = report
+    master[goalie_key][str(report['game_id'])] = prepare_report_for_master(report)
     save_master_reports(master)
     return MASTER_REPORT_FILE
 
@@ -540,7 +599,7 @@ def load_goalie_data(active_goalie):
             "Date": g_info.get('date', data.get('gameDate') or raw_game.get('gameDate', "0000-00-00")),
             "Matchup": get_goalie_matchup_label(g_id, goalie_id, g_info),
             "Game_ID": g_id,
-            "SLC": float(data.get('total', {}).get('score', 0)),
+            "SLC": current_report_score(data),
             "Sovereignty": round((actual_sv - expected_sv) * 100, 3) if shots > 0 else 0,
             "Net_Load": round(service - tax, 3),
             "Service": service,
@@ -619,7 +678,7 @@ def _build_single_loan_row(goalie_key, game_id, schedule_info=None):
     p3_ga = p3_stats.get('S_goals', 0)
     p3_sovereignty = _calculate_sovereignty(p3_stats)
     p3_tax = _period_tax_base(p3_stats)
-    p3_slc = float(report.get('periods', {}).get('3', {}).get('score', 0))
+    p3_slc = current_period_score(report, 3)
 
     date_value = report.get('gameDate') or raw_game.get('gameDate')
     matchup = get_goalie_matchup_label(game_id, goalie_id, schedule_info)
@@ -705,10 +764,12 @@ def build_slc_hypothesis_data(goalie_key, goalie_name=None):
             reset_ratio = total_stats.get('NPW', 0) / defensive_load if defensive_load > 0 else 0
         sequence_metrics = get_pressure_sequence_metrics(row["Game_ID"], goalie_id)
 
-        p1 = report.get('periods', {}).get('1', {})
-        p2 = report.get('periods', {}).get('2', {})
         p3_stats = _get_period_stats(report, 3)
-        early_scores = [p.get('score') for p in [p1, p2] if p.get('score') is not None]
+        early_scores = [
+            current_period_score(report, period)
+            for period in [1, 2]
+            if report.get('periods', {}).get(str(period), {}).get('stats')
+        ]
         early_slc = sum(early_scores) / len(early_scores) if early_scores else 0
         p3_hardware_failures = (
             p3_stats.get('UA', 0) +
@@ -754,7 +815,7 @@ def build_game_slc_xga_data(goalie_key, game_id):
         xga_per_60 = (stats.get('xG', 0) / period_minutes) * 60 if period_minutes else 0
         rows.append({
             "Period": f"P{period}",
-            "SLC": float(period_data.get('score', 0)),
+            "SLC": current_period_score(report, period),
             "xGA_Per_60": round(xga_per_60, 3)
         })
 
@@ -979,6 +1040,7 @@ def run_xg_scrubber():
                 raw_game = json.load(f)
 
             apply_xg_to_report(game_entry, raw_game)
+            goalie_games[game_id] = prepare_report_for_master(game_entry)
 
     with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(master_report, f, indent=4)
