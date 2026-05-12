@@ -66,26 +66,22 @@ def get_total_seconds(time_str, period):
 def calculate_service_tax(stats, is_sh=False, include_baseline=False):
     """Return weighted Service and Tax with short-handed modifiers applied."""
     if is_sh:
-        service = (stats.get('NPW', 0) * 1.5) + stats.get('iTkA', 0)
+        service = (stats.get('NPW', 0) * 1.5) + (stats.get('NPW_SH', 0) * 1.5) + stats.get('iTkA', 0)
         tax = (
             (stats.get('UA', 0) * 2.0) +
+            (stats.get('UA_SH', 0) * 2.0) +
             (stats.get('RP', 0) * 3.0) +
+            (stats.get('RP_SH', 0) * 3.0) +
             (stats.get('iGvA', 0) * 2.0) +
             (stats.get('iGvA_SH', 0) * 4.5)
         )
     else:
-        npw_sh = stats.get('NPW_SH', 0)
-        ua_sh = stats.get('UA_SH', 0)
-        rp_sh = stats.get('RP_SH', 0)
-        npw_ev = max(stats.get('NPW', 0) - npw_sh, 0)
-        ua_ev = max(stats.get('UA', 0) - ua_sh, 0)
-        rp_ev = max(stats.get('RP', 0) - rp_sh, 0)
-        service = npw_ev + (npw_sh * 1.5) + stats.get('iTkA', 0)
+        service = stats.get('NPW', 0) + (stats.get('NPW_SH', 0) * 1.5) + stats.get('iTkA', 0)
         tax = (
-            (ua_ev * 1.0) +
-            (ua_sh * 2.0) +
-            (rp_ev * 2.0) +
-            (rp_sh * 3.0) +
+            (stats.get('UA', 0) * 1.0) +
+            (stats.get('UA_SH', 0) * 2.0) +
+            (stats.get('RP', 0) * 2.0) +
+            (stats.get('RP_SH', 0) * 3.0) +
             (stats.get('iGvA', 0) * 2.0) +
             (stats.get('iGvA_SH', 0) * 4.5)
         )
@@ -250,6 +246,24 @@ def load_local_report(game_id, goalie_name):
     master = load_master_reports()
     goalie_key = sanitize_goalie_name(goalie_name)
     return master.get(goalie_key, {}).get(str(game_id))
+
+
+def clear_data_caches():
+    """Clear local function caches when dashboard data is updated."""
+    for func_name in [
+        "_load_master_reports_cached",
+        "_load_schedule_map_cached",
+        "_load_raw_game_cached",
+        "_load_goalie_data_cached",
+        "_get_team_sequence_data_cached",
+        "_get_pressure_sequence_metrics_cached",
+        "_build_high_interest_loan_data_cached",
+        "_build_slc_hypothesis_data_cached",
+        "_build_game_slc_xga_data_cached",
+    ]:
+        func = globals().get(func_name)
+        if hasattr(func, "cache_clear"):
+            func.cache_clear()
 
 
 def _load_schedule_map():
