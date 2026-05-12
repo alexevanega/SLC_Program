@@ -11909,6 +11909,223 @@
                 }
             },
             "gameDate": "2026-05-06"
+        },
+        "2025030212": {
+            "game_id": 2025030212,
+            "goalie_id": 8479312,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 11,
+                        "S_goals": 2,
+                        "NPW": 9,
+                        "NPW_SH": 5,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.0847,
+                        "xS": 11.9153,
+                        "SLC_event": -0.7222,
+                        "Pressure_Weight": 16.0,
+                        "Sequences": 11,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.5155542366101957,
+                        "SH_Shots": 6,
+                        "SH_Tax": 3.0
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 7,
+                        "S_goals": 1,
+                        "NPW": 5,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.9046,
+                        "xS": 7.0954,
+                        "SLC_event": -0.0348,
+                        "Pressure_Weight": 8.5,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.5155542366101957,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 5,
+                        "S_goals": 1,
+                        "NPW": 2,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.4011,
+                        "xS": 5.5989,
+                        "SLC_event": -0.5503,
+                        "Pressure_Weight": 7.5,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.5155542366101957,
+                        "Brunt": 1
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 23,
+                    "S_goals": 4,
+                    "NPW": 16,
+                    "NPW_SH": 6,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 3,
+                    "UA_SH": 0,
+                    "RP": 0,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 2.3904,
+                    "xS": 24.6096,
+                    "SLC_event": -1.3073,
+                    "Pressure_Weight": 32.0,
+                    "Sequences": 21,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 0.72,
+                    "xG_Calibration": 1.5156,
+                    "SH_Shots": 7,
+                    "SH_Tax": 3.5,
+                    "Brunt": 1
+                }
+            },
+            "gameDate": "2026-05-08"
+        },
+        "2025030213": {
+            "game_id": 2025030213,
+            "goalie_id": 8479312,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 13,
+                        "S_goals": 1,
+                        "NPW": 6,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.2298,
+                        "xS": 12.7702,
+                        "SLC_event": 0.7403,
+                        "Pressure_Weight": 16.0,
+                        "Sequences": 11,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.3600000000000003,
+                        "xG_Calibration": 1.4669532038068505,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5,
+                        "Brunt": 1
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 12,
+                        "S_goals": 3,
+                        "NPW": 9,
+                        "NPW_SH": 4,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 0,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 2.1159,
+                        "xS": 12.8841,
+                        "SLC_event": 0.6991,
+                        "Pressure_Weight": 19.5,
+                        "Sequences": 11,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.4800000000000004,
+                        "xG_Calibration": 1.4669532038068505,
+                        "SH_Shots": 6,
+                        "SH_Tax": 3.0,
+                        "Brunt": 1
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 6,
+                        "S_goals": 1,
+                        "NPW": 4,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 1,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.4608,
+                        "xS": 6.5392,
+                        "SLC_event": -0.4777,
+                        "Pressure_Weight": 8.0,
+                        "Sequences": 5,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.3600000000000001,
+                        "xG_Calibration": 1.4669532038068505,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.0
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 31,
+                    "S_goals": 5,
+                    "NPW": 19,
+                    "NPW_SH": 4,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 3,
+                    "UA_SH": 1,
+                    "RP": 1,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 3.8065,
+                    "xS": 32.1935,
+                    "SLC_event": 0.9617,
+                    "Pressure_Weight": 43.5,
+                    "Sequences": 27,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 1.2,
+                    "xG_Calibration": 1.467,
+                    "SH_Shots": 9,
+                    "SH_Tax": 4.5,
+                    "Brunt": 2
+                }
+            },
+            "gameDate": "2026-05-10"
         }
     },
     "alex_nedeljkovic": {
@@ -52371,6 +52588,225 @@
                 }
             },
             "gameDate": "2026-05-06"
+        },
+        "2025030243": {
+            "game_id": 2025030243,
+            "goalie_id": 8479394,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 11,
+                        "S_goals": 0,
+                        "NPW": 8,
+                        "NPW_SH": 2,
+                        "iTkA": 0,
+                        "iGvA": 1,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.3655,
+                        "xS": 9.6345,
+                        "SLC_event": 2.1271,
+                        "Pressure_Weight": 13.5,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 1,
+                        "Sequence_Fatigue": 2.04,
+                        "xG_Calibration": 1.6447946872636194,
+                        "Brunt": 1,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.0
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 10,
+                        "S_goals": 0,
+                        "NPW": 6,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.6833,
+                        "xS": 9.3167,
+                        "SLC_event": 0.7926,
+                        "Pressure_Weight": 11.5,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 1.2000000000000002,
+                        "xG_Calibration": 1.6447946872636194,
+                        "Brunt": 1
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 10,
+                        "S_goals": 2,
+                        "NPW": 7,
+                        "NPW_SH": 3,
+                        "iTkA": 0,
+                        "iGvA": 1,
+                        "UA": 1,
+                        "UA_SH": 1,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.3953,
+                        "xS": 10.6047,
+                        "SLC_event": 0.0533,
+                        "Pressure_Weight": 15.5,
+                        "Sequences": 8,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.4800000000000004,
+                        "xG_Calibration": 1.6447946872636194,
+                        "Brunt": 1,
+                        "SH_Shots": 4,
+                        "SH_Tax": 2.0
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 31,
+                    "S_goals": 2,
+                    "NPW": 21,
+                    "NPW_SH": 5,
+                    "iTkA": 0,
+                    "iGvA": 2,
+                    "UA": 3,
+                    "UA_SH": 1,
+                    "RP": 1,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 3.4441,
+                    "xS": 29.5559,
+                    "SLC_event": 2.973,
+                    "Pressure_Weight": 40.5,
+                    "Sequences": 16,
+                    "Lateral_Adjustments": 1,
+                    "Sequence_Fatigue": 3.72,
+                    "xG_Calibration": 1.6448,
+                    "Brunt": 3,
+                    "SH_Shots": 6,
+                    "SH_Tax": 3.0
+                }
+            },
+            "gameDate": "2026-05-08"
+        },
+        "2025030244": {
+            "game_id": 2025030244,
+            "goalie_id": 8479394,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 7,
+                        "S_goals": 2,
+                        "NPW": 5,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.6898,
+                        "xS": 8.3102,
+                        "SLC_event": -0.5891,
+                        "Pressure_Weight": 12.75,
+                        "Sequences": 8,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.6516301975044043,
+                        "SH_Shots": 3,
+                        "SH_Tax": 2.25,
+                        "Brunt": 1
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 8,
+                        "S_goals": 1,
+                        "NPW": 4,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 2,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.2689,
+                        "xS": 7.7311,
+                        "SLC_event": 1.6111,
+                        "Pressure_Weight": 12.5,
+                        "Sequences": 5,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.8400000000000001,
+                        "xG_Calibration": 1.6516301975044043,
+                        "Brunt": 2,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 4,
+                        "S_goals": 1,
+                        "NPW": 3,
+                        "NPW_SH": 2,
+                        "iTkA": 0,
+                        "iGvA": 1,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.3107,
+                        "xS": 4.6893,
+                        "SLC_event": -0.5857,
+                        "Pressure_Weight": 6.5,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.6516301975044043,
+                        "SH_Shots": 3,
+                        "SH_Tax": 1.5
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 19,
+                    "S_goals": 4,
+                    "NPW": 12,
+                    "NPW_SH": 3,
+                    "iTkA": 0,
+                    "iGvA": 3,
+                    "UA": 1,
+                    "UA_SH": 0,
+                    "RP": 1,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 2.2694,
+                    "xS": 20.7306,
+                    "SLC_event": 0.4363,
+                    "Pressure_Weight": 31.75,
+                    "Sequences": 17,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 1.08,
+                    "xG_Calibration": 1.6516,
+                    "SH_Shots": 7,
+                    "SH_Tax": 4.25,
+                    "Brunt": 3
+                }
+            },
+            "gameDate": "2026-05-10"
         }
     },
     "casey_desmith": {
@@ -79798,6 +80234,241 @@
                 }
             },
             "gameDate": "2025-10-04"
+        },
+        "2025030223": {
+            "game_id": 2025030223,
+            "goalie_id": 8478435,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 9,
+                        "S_goals": 1,
+                        "NPW": 7,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.0451,
+                        "xS": 8.9549,
+                        "SLC_event": 0.8089,
+                        "Pressure_Weight": 13.5,
+                        "Sequences": 7,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.4800000000000002,
+                        "xG_Calibration": 1.344771082948894,
+                        "Brunt": 2,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 8,
+                        "S_goals": 1,
+                        "NPW": 7,
+                        "NPW_SH": 2,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.4409,
+                        "xS": 8.5591,
+                        "SLC_event": -0.4879,
+                        "Pressure_Weight": 10.5,
+                        "Sequences": 7,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.344771082948894,
+                        "SH_Shots": 3,
+                        "SH_Tax": 1.5
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 10,
+                        "S_goals": 2,
+                        "NPW": 8,
+                        "NPW_SH": 3,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.9975,
+                        "xS": 11.0025,
+                        "SLC_event": -0.5562,
+                        "Pressure_Weight": 14.0,
+                        "Sequences": 8,
+                        "Lateral_Adjustments": 1,
+                        "Sequence_Fatigue": 0.4800000000000004,
+                        "xG_Calibration": 1.344771082948894,
+                        "SH_Shots": 4,
+                        "SH_Tax": 2.0
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 27,
+                    "S_goals": 4,
+                    "NPW": 22,
+                    "NPW_SH": 5,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 0,
+                    "UA_SH": 0,
+                    "RP": 1,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 2.4835,
+                    "xS": 28.5165,
+                    "SLC_event": -0.2352,
+                    "Pressure_Weight": 38.0,
+                    "Sequences": 22,
+                    "Lateral_Adjustments": 1,
+                    "Sequence_Fatigue": 1.2,
+                    "xG_Calibration": 1.3448,
+                    "Brunt": 2,
+                    "SH_Shots": 8,
+                    "SH_Tax": 4.0
+                }
+            },
+            "gameDate": "2026-05-07"
+        },
+        "2025030224": {
+            "game_id": 2025030224,
+            "goalie_id": 8478435,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 8,
+                        "S_goals": 0,
+                        "NPW": 5,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.717,
+                        "xS": 7.283,
+                        "SLC_event": 0.717,
+                        "Pressure_Weight": 8.0,
+                        "Sequences": 5,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.4800000000000002,
+                        "xG_Calibration": 1.295572002718399
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 14,
+                        "S_goals": 1,
+                        "NPW": 8,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 4,
+                        "UA_SH": 1,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.1976,
+                        "xS": 13.8024,
+                        "SLC_event": 0.3278,
+                        "Pressure_Weight": 16.5,
+                        "Sequences": 8,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 1.92,
+                        "xG_Calibration": 1.295572002718399,
+                        "SH_Shots": 3,
+                        "SH_Tax": 1.5
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 12,
+                        "S_goals": 1,
+                        "NPW": 6,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.8693,
+                        "xS": 12.1307,
+                        "SLC_event": -0.1307,
+                        "Pressure_Weight": 13.0,
+                        "Sequences": 10,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.4800000000000002,
+                        "xG_Calibration": 1.295572002718399
+                    }
+                },
+                "4": {
+                    "stats": {
+                        "S_saves": 3,
+                        "S_goals": 1,
+                        "NPW": 1,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.4547,
+                        "xS": 3.5453,
+                        "SLC_event": -0.5453,
+                        "Pressure_Weight": 4.0,
+                        "Sequences": 3,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.295572002718399
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 37,
+                    "S_goals": 3,
+                    "NPW": 20,
+                    "NPW_SH": 1,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 6,
+                    "UA_SH": 1,
+                    "RP": 0,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 3.2386,
+                    "xS": 36.7614,
+                    "SLC_event": 0.3688,
+                    "Pressure_Weight": 41.5,
+                    "Sequences": 26,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 3.0,
+                    "xG_Calibration": 1.2956,
+                    "SH_Shots": 3,
+                    "SH_Tax": 1.5
+                }
+            },
+            "gameDate": "2026-05-09"
         }
     },
     "darcy_kuemper": {
@@ -118283,6 +118954,242 @@
                 }
             },
             "gameDate": "2025-09-29"
+        },
+        "2025030223": {
+            "game_id": 2025030223,
+            "goalie_id": 8475883,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 7,
+                        "S_goals": 0,
+                        "NPW": 5,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.7188,
+                        "xS": 6.2812,
+                        "SLC_event": 0.7188,
+                        "Pressure_Weight": 7.0,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.344771082948894
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 5,
+                        "S_goals": 1,
+                        "NPW": 2,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.5711,
+                        "xS": 5.4289,
+                        "SLC_event": 0.2404,
+                        "Pressure_Weight": 10.25,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.3600000000000001,
+                        "xG_Calibration": 1.344771082948894,
+                        "SH_Shots": 4,
+                        "SH_Tax": 2.75,
+                        "Brunt": 1
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 6,
+                        "S_goals": 0,
+                        "NPW": 6,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.6009,
+                        "xS": 5.3991,
+                        "SLC_event": 0.7057,
+                        "Pressure_Weight": 6.5,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.0,
+                        "xG_Calibration": 1.344771082948894,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 18,
+                    "S_goals": 1,
+                    "NPW": 13,
+                    "NPW_SH": 1,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 1,
+                    "UA_SH": 0,
+                    "RP": 0,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 1.8908,
+                    "xS": 17.1092,
+                    "SLC_event": 1.6649,
+                    "Pressure_Weight": 23.75,
+                    "Sequences": 16,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 0.48,
+                    "xG_Calibration": 1.3448,
+                    "SH_Shots": 5,
+                    "SH_Tax": 3.25,
+                    "Brunt": 1
+                }
+            },
+            "gameDate": "2026-05-07"
+        },
+        "2025030224": {
+            "game_id": 2025030224,
+            "goalie_id": 8475883,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 4,
+                        "S_goals": 1,
+                        "NPW": 1,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.4332,
+                        "xS": 4.5668,
+                        "SLC_event": -0.3326,
+                        "Pressure_Weight": 6.5,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.295572002718399,
+                        "Brunt": 1
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 4,
+                        "S_goals": 0,
+                        "NPW": 3,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 1,
+                        "UA": 1,
+                        "UA_SH": 1,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.3104,
+                        "xS": 3.6896,
+                        "SLC_event": 0.3857,
+                        "Pressure_Weight": 5.0,
+                        "Sequences": 3,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.295572002718399,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.0
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 5,
+                        "S_goals": 1,
+                        "NPW": 3,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.5307,
+                        "xS": 5.4693,
+                        "SLC_event": -0.0395,
+                        "Pressure_Weight": 9.0,
+                        "Sequences": 5,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.295572002718399,
+                        "Brunt": 2
+                    }
+                },
+                "4": {
+                    "stats": {
+                        "S_saves": 2,
+                        "S_goals": 0,
+                        "NPW": 1,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.0637,
+                        "xS": 1.9363,
+                        "SLC_event": 0.0637,
+                        "Pressure_Weight": 2.0,
+                        "Sequences": 2,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.0,
+                        "xG_Calibration": 1.295572002718399
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 15,
+                    "S_goals": 2,
+                    "NPW": 8,
+                    "NPW_SH": 1,
+                    "iTkA": 0,
+                    "iGvA": 1,
+                    "UA": 3,
+                    "UA_SH": 1,
+                    "RP": 1,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 1.338,
+                    "xS": 15.662,
+                    "SLC_event": 0.0773,
+                    "Pressure_Weight": 22.5,
+                    "Sequences": 14,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 0.36,
+                    "xG_Calibration": 1.2956,
+                    "Brunt": 3,
+                    "SH_Shots": 2,
+                    "SH_Tax": 1.0
+                }
+            },
+            "gameDate": "2026-05-09"
         }
     },
     "igor_shesterkin": {
@@ -152540,6 +153447,227 @@
                 }
             },
             "gameDate": "2026-05-06"
+        },
+        "2025030212": {
+            "game_id": 2025030212,
+            "goalie_id": 8482487,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 8,
+                        "S_goals": 0,
+                        "NPW": 7,
+                        "NPW_SH": 3,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.3952,
+                        "xS": 7.6048,
+                        "SLC_event": 0.4783,
+                        "Pressure_Weight": 9.5,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.3600000000000001,
+                        "xG_Calibration": 1.5155542366101957,
+                        "SH_Shots": 3,
+                        "SH_Tax": 1.5
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 10,
+                        "S_goals": 1,
+                        "NPW": 7,
+                        "NPW_SH": 4,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.0918,
+                        "xS": 9.9082,
+                        "SLC_event": 0.4681,
+                        "Pressure_Weight": 16.25,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 1.3200000000000003,
+                        "xG_Calibration": 1.5155542366101957,
+                        "SH_Shots": 6,
+                        "SH_Tax": 3.75,
+                        "Brunt": 1
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 10,
+                        "S_goals": 0,
+                        "NPW": 8,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.1861,
+                        "xS": 8.8139,
+                        "SLC_event": 1.7086,
+                        "Pressure_Weight": 12.0,
+                        "Sequences": 7,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.3600000000000003,
+                        "xG_Calibration": 1.5155542366101957,
+                        "Brunt": 1,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 28,
+                    "S_goals": 1,
+                    "NPW": 22,
+                    "NPW_SH": 8,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 0,
+                    "UA_SH": 0,
+                    "RP": 1,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 2.6731,
+                    "xS": 26.3269,
+                    "SLC_event": 2.655,
+                    "Pressure_Weight": 37.75,
+                    "Sequences": 17,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 2.04,
+                    "xG_Calibration": 1.5156,
+                    "SH_Shots": 10,
+                    "SH_Tax": 5.75,
+                    "Brunt": 2
+                }
+            },
+            "gameDate": "2026-05-08"
+        },
+        "2025030213": {
+            "game_id": 2025030213,
+            "goalie_id": 8482487,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 7,
+                        "S_goals": 1,
+                        "NPW": 3,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 0,
+                        "RP": 2,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.2446,
+                        "xS": 6.7554,
+                        "SLC_event": 1.0953,
+                        "Pressure_Weight": 11.5,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.4669532038068505,
+                        "Brunt": 2,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 9,
+                        "S_goals": 1,
+                        "NPW": 9,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 1,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.7101,
+                        "xS": 9.2899,
+                        "SLC_event": 0.1458,
+                        "Pressure_Weight": 12.0,
+                        "Sequences": 8,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.4669532038068505,
+                        "Brunt": 1,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 10,
+                        "S_goals": 0,
+                        "NPW": 4,
+                        "NPW_SH": 2,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 3,
+                        "UA_SH": 1,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.1444,
+                        "xS": 8.8556,
+                        "SLC_event": 2.1339,
+                        "Pressure_Weight": 16.25,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.8400000000000001,
+                        "xG_Calibration": 1.4669532038068505,
+                        "SH_Shots": 5,
+                        "SH_Tax": 3.25,
+                        "Brunt": 2
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 26,
+                    "S_goals": 2,
+                    "NPW": 16,
+                    "NPW_SH": 3,
+                    "iTkA": 0,
+                    "iGvA": 1,
+                    "UA": 4,
+                    "UA_SH": 1,
+                    "RP": 3,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 3.0991,
+                    "xS": 24.9009,
+                    "SLC_event": 3.375,
+                    "Pressure_Weight": 39.75,
+                    "Sequences": 20,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 1.32,
+                    "xG_Calibration": 1.467,
+                    "Brunt": 5,
+                    "SH_Shots": 7,
+                    "SH_Tax": 4.25
+                }
+            },
+            "gameDate": "2026-05-10"
         }
     },
     "james_reimer": {
@@ -166238,6 +167366,117 @@
                 }
             },
             "gameDate": "2025-09-30"
+        },
+        "2025030233": {
+            "game_id": 2025030233,
+            "goalie_id": 8482661,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 9,
+                        "S_goals": 0,
+                        "NPW": 4,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 2,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.5755,
+                        "xS": 8.4245,
+                        "SLC_event": 0.8259,
+                        "Pressure_Weight": 13.25,
+                        "Sequences": 5,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.8400000000000001,
+                        "xG_Calibration": 1.1982257816376631,
+                        "SH_Shots": 4,
+                        "SH_Tax": 2.75,
+                        "Brunt": 1
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 12,
+                        "S_goals": 1,
+                        "NPW": 7,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 1,
+                        "RP": 1,
+                        "RP_SH": 1,
+                        "iGvA_SH": 0,
+                        "xG": 1.6639,
+                        "xS": 11.3361,
+                        "SLC_event": 2.7614,
+                        "Pressure_Weight": 20.5,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 1.3200000000000003,
+                        "xG_Calibration": 1.1982257816376631,
+                        "Brunt": 3,
+                        "SH_Shots": 3,
+                        "SH_Tax": 3.0
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 14,
+                        "S_goals": 0,
+                        "NPW": 8,
+                        "NPW_SH": 2,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 0,
+                        "RP": 3,
+                        "RP_SH": 3,
+                        "iGvA_SH": 0,
+                        "xG": 1.3662,
+                        "xS": 12.6338,
+                        "SLC_event": 3.3147,
+                        "Pressure_Weight": 23.25,
+                        "Sequences": 7,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 1.3200000000000003,
+                        "xG_Calibration": 1.1982257816376631,
+                        "SH_Shots": 5,
+                        "SH_Tax": 4.75,
+                        "Brunt": 3
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 35,
+                    "S_goals": 1,
+                    "NPW": 19,
+                    "NPW_SH": 2,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 6,
+                    "UA_SH": 3,
+                    "RP": 4,
+                    "RP_SH": 4,
+                    "iGvA_SH": 0,
+                    "xG": 3.6056,
+                    "xS": 32.3944,
+                    "SLC_event": 6.902,
+                    "Pressure_Weight": 57.0,
+                    "Sequences": 18,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 3.48,
+                    "xG_Calibration": 1.1982,
+                    "SH_Shots": 12,
+                    "SH_Tax": 10.5,
+                    "Brunt": 7
+                }
+            },
+            "gameDate": "2026-05-09"
         }
     },
     "jet_greaves": {
@@ -251274,6 +252513,173 @@
                 }
             },
             "gameDate": "2026-05-06"
+        },
+        "2025030243": {
+            "game_id": 2025030243,
+            "goalie_id": 8480843,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 5,
+                        "S_goals": 3,
+                        "NPW": 4,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.1385,
+                        "xS": 6.8615,
+                        "SLC_event": -1.2951,
+                        "Pressure_Weight": 11.25,
+                        "Sequences": 7,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.6447946872636194,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.75,
+                        "Brunt": 1
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 5,
+                    "S_goals": 3,
+                    "NPW": 4,
+                    "NPW_SH": 0,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 0,
+                    "UA_SH": 0,
+                    "RP": 0,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 1.1385,
+                    "xS": 6.8615,
+                    "SLC_event": -1.2951,
+                    "Pressure_Weight": 11.25,
+                    "Sequences": 7,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 0.12,
+                    "xG_Calibration": 1.6448,
+                    "SH_Shots": 2,
+                    "SH_Tax": 1.75,
+                    "Brunt": 1
+                }
+            },
+            "gameDate": "2026-05-08"
+        },
+        "2025030244": {
+            "game_id": 2025030244,
+            "goalie_id": 8480843,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 4,
+                        "S_goals": 1,
+                        "NPW": 3,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.6462,
+                        "xS": 3.3538,
+                        "SLC_event": 1.0291,
+                        "Pressure_Weight": 8.75,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.1200000000000001,
+                        "xG_Calibration": 1.6516301975044043,
+                        "SH_Shots": 3,
+                        "SH_Tax": 2.25,
+                        "Brunt": 1
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 6,
+                        "S_goals": 1,
+                        "NPW": 5,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 1,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.8757,
+                        "xS": 6.1243,
+                        "SLC_event": 0.4441,
+                        "Pressure_Weight": 8.5,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.72,
+                        "xG_Calibration": 1.6516301975044043,
+                        "Brunt": 1
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 8,
+                        "S_goals": 1,
+                        "NPW": 5,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 1,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.7836,
+                        "xS": 8.2164,
+                        "SLC_event": 0.2947,
+                        "Pressure_Weight": 11.5,
+                        "Sequences": 7,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.6516301975044043,
+                        "SH_Shots": 5,
+                        "SH_Tax": 2.5
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 18,
+                    "S_goals": 3,
+                    "NPW": 13,
+                    "NPW_SH": 2,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 1,
+                    "UA_SH": 1,
+                    "RP": 1,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 3.3055,
+                    "xS": 17.6945,
+                    "SLC_event": 1.7679,
+                    "Pressure_Weight": 28.75,
+                    "Sequences": 15,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 1.08,
+                    "xG_Calibration": 1.6516,
+                    "SH_Shots": 8,
+                    "SH_Tax": 4.75,
+                    "Brunt": 2
+                }
+            },
+            "gameDate": "2026-05-10"
         }
     },
     "mackenzie_blackwood": {
@@ -255314,6 +256720,90 @@
                 }
             },
             "gameDate": "2026-04-14"
+        },
+        "2025030233": {
+            "game_id": 2025030233,
+            "goalie_id": 8478406,
+            "periods": {
+                "2": {
+                    "stats": {
+                        "S_saves": 5,
+                        "S_goals": 1,
+                        "NPW": 2,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.8015,
+                        "xS": 5.1985,
+                        "SLC_event": 0.1601,
+                        "Pressure_Weight": 9.25,
+                        "Sequences": 4,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.1982257816376631,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.75,
+                        "Brunt": 1
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 7,
+                        "S_goals": 0,
+                        "NPW": 5,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 1,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.5525,
+                        "xS": 6.4475,
+                        "SLC_event": 0.5866,
+                        "Pressure_Weight": 7.5,
+                        "Sequences": 5,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.2400000000000002,
+                        "xG_Calibration": 1.1982257816376631,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 12,
+                    "S_goals": 1,
+                    "NPW": 7,
+                    "NPW_SH": 1,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 1,
+                    "UA_SH": 0,
+                    "RP": 0,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 1.354,
+                    "xS": 11.646,
+                    "SLC_event": 0.7467,
+                    "Pressure_Weight": 16.75,
+                    "Sequences": 9,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 0.48,
+                    "xG_Calibration": 1.1982,
+                    "SH_Shots": 3,
+                    "SH_Tax": 2.25,
+                    "Brunt": 1
+                }
+            },
+            "gameDate": "2026-05-09"
         }
     },
     "nikita_tolopilo": {
@@ -273991,6 +275481,88 @@
                 }
             },
             "gameDate": "2025-10-04"
+        },
+        "2025030233": {
+            "game_id": 2025030233,
+            "goalie_id": 8475809,
+            "periods": {
+                "1": {
+                    "stats": {
+                        "S_saves": 8,
+                        "S_goals": 2,
+                        "NPW": 6,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.7148,
+                        "xS": 9.2852,
+                        "SLC_event": -0.9341,
+                        "Pressure_Weight": 11.0,
+                        "Sequences": 7,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.4800000000000002,
+                        "xG_Calibration": 1.1982257816376631,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.0
+                    }
+                },
+                "2": {
+                    "stats": {
+                        "S_saves": 1,
+                        "S_goals": 1,
+                        "NPW": 1,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 0.1887,
+                        "xS": 1.8113,
+                        "SLC_event": -0.4648,
+                        "Pressure_Weight": 3.0,
+                        "Sequences": 2,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.0,
+                        "xG_Calibration": 1.1982257816376631,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.0
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 9,
+                    "S_goals": 3,
+                    "NPW": 7,
+                    "NPW_SH": 1,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 0,
+                    "UA_SH": 0,
+                    "RP": 0,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 0.9035,
+                    "xS": 11.0965,
+                    "SLC_event": -1.3989,
+                    "Pressure_Weight": 14.0,
+                    "Sequences": 9,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 0.48,
+                    "xG_Calibration": 1.1982,
+                    "SH_Shots": 4,
+                    "SH_Tax": 2.0
+                }
+            },
+            "gameDate": "2026-05-09"
         }
     },
     "sergei_bobrovsky": {
@@ -305068,6 +306640,90 @@
                 }
             },
             "gameDate": "2025-09-29"
+        },
+        "2025030243": {
+            "game_id": 2025030243,
+            "goalie_id": 8478024,
+            "periods": {
+                "2": {
+                    "stats": {
+                        "S_saves": 7,
+                        "S_goals": 2,
+                        "NPW": 4,
+                        "NPW_SH": 0,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 2,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.3581,
+                        "xS": 7.6419,
+                        "SLC_event": -0.6031,
+                        "Pressure_Weight": 9.5,
+                        "Sequences": 6,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.72,
+                        "xG_Calibration": 1.6447946872636194,
+                        "SH_Shots": 1,
+                        "SH_Tax": 0.5
+                    }
+                },
+                "3": {
+                    "stats": {
+                        "S_saves": 10,
+                        "S_goals": 0,
+                        "NPW": 7,
+                        "NPW_SH": 1,
+                        "iTkA": 0,
+                        "iGvA": 0,
+                        "UA": 0,
+                        "UA_SH": 0,
+                        "RP": 0,
+                        "RP_SH": 0,
+                        "iGvA_SH": 0,
+                        "xG": 1.024,
+                        "xS": 8.976,
+                        "SLC_event": 1.4164,
+                        "Pressure_Weight": 14.75,
+                        "Sequences": 5,
+                        "Lateral_Adjustments": 0,
+                        "Sequence_Fatigue": 0.8400000000000003,
+                        "xG_Calibration": 1.6447946872636194,
+                        "SH_Shots": 2,
+                        "SH_Tax": 1.75,
+                        "Brunt": 2
+                    }
+                }
+            },
+            "total": {
+                "stats": {
+                    "S_saves": 17,
+                    "S_goals": 2,
+                    "NPW": 11,
+                    "NPW_SH": 1,
+                    "iTkA": 0,
+                    "iGvA": 0,
+                    "UA": 2,
+                    "UA_SH": 0,
+                    "RP": 0,
+                    "RP_SH": 0,
+                    "iGvA_SH": 0,
+                    "xG": 2.3821,
+                    "xS": 16.6179,
+                    "SLC_event": 0.8133,
+                    "Pressure_Weight": 24.25,
+                    "Sequences": 11,
+                    "Lateral_Adjustments": 0,
+                    "Sequence_Fatigue": 1.56,
+                    "xG_Calibration": 1.6448,
+                    "SH_Shots": 3,
+                    "SH_Tax": 2.25,
+                    "Brunt": 2
+                }
+            },
+            "gameDate": "2026-05-08"
         }
     },
     "vitek_vanecek": {

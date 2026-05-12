@@ -1291,37 +1291,58 @@ else:
     else:
         goalie_row = leaderboard[leaderboard["Goalie"] == selected_goalie].iloc[0]
 
-        st.subheader("Score")
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Avg SLC", f"{goalie_row['Avg_SLC']:.3f}")
-        c2.metric("Total SLC", f"{goalie_row['Total_SLC']:.3f}")
-        c3.metric("Sovereignty", f"{goalie_row['Sovereignty']:.3f}")
-        c4.metric("Games", int(goalie_row["GP"]))
+        league_avg_slc = float(leaderboard["Avg_SLC"].mean())
+        slc_percentile = float(leaderboard["Avg_SLC"].rank(pct=True).loc[goalie_row.name] * 100)
+        slc_delta = float(goalie_row["Avg_SLC"] - league_avg_slc)
+        net_load = float(goalie_row["Net_Load"])
 
-        st.subheader("Ingredients")
-        ingredient_rows = pd.DataFrame([
+        if slc_percentile >= 75:
+            season_claim = "SLC sees this goalie as one of the stronger pressure-handlers in this game set."
+        elif slc_percentile >= 50:
+            season_claim = "SLC sees this goalie as helping more than most, but not separating from the top group."
+        elif slc_percentile >= 25:
+            season_claim = "SLC sees this goalie as below the middle of the league context."
+        else:
+            season_claim = "SLC sees this goalie as one of the weaker pressure-handling profiles in this game set."
+
+        if net_load >= 0:
+            load_claim = "The evidence leans positive because clean resets are outweighing unresolved pressure."
+        else:
+            load_claim = "The warning sign is that unresolved pressure is outweighing clean resets."
+
+        st.subheader("Season Read")
+        st.info(f"{season_claim} {load_claim}")
+
+        st.subheader("Evidence")
+        e1, e2, e3, e4 = st.columns(4)
+        e1.metric("Avg SLC", f"{goalie_row['Avg_SLC']:.3f}", delta=f"{slc_delta:+.3f} vs league")
+        e2.metric("League Avg", f"{league_avg_slc:.3f}")
+        e3.metric("Percentile", f"{slc_percentile:.0f}")
+        e4.metric("Games", int(goalie_row["GP"]))
+
+        evidence_rows = pd.DataFrame([
             {
-                "Ingredient": "Service",
+                "Evidence": "Service",
                 "Value": goalie_row["Service"],
-                "Meaning": "Clean resets and useful goalie actions",
+                "What it means": "Pressure the goalie helped end cleanly",
             },
             {
-                "Ingredient": "Tax",
+                "Evidence": "Tax",
                 "Value": goalie_row["Tax"],
-                "Meaning": "Rebounds, uncleared saves, giveaways, pressure cost",
+                "What it means": "Pressure that stayed dangerous or got worse",
             },
             {
-                "Ingredient": "Net Load",
+                "Evidence": "Net Load",
                 "Value": goalie_row["Net_Load"],
-                "Meaning": "Service minus tax",
+                "What it means": "Whether service beat tax",
             },
             {
-                "Ingredient": "Reset Ratio",
+                "Evidence": "Reset Ratio",
                 "Value": goalie_row["Reset_Ratio"],
-                "Meaning": "How often the goalie ended pressure cleanly",
+                "What it means": "How often pressure was ended cleanly",
             },
         ])
-        st.dataframe(ingredient_rows, width="stretch", hide_index=True)
+        st.dataframe(evidence_rows, width="stretch", hide_index=True)
 
         st.subheader("Games")
         game_history_columns = [
