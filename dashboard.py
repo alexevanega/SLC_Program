@@ -57,10 +57,10 @@ def format_date(value):
 def render_goalie_header(summary):
     meta = get_player_metadata(summary["ID"])
     with st.container(border=True):
-        c1, c2, c3, c4, c5, c6 = st.columns([1, 3, 1, 1, 1, 1])
+        c1, c2, c3, c4, c5, c6 = st.columns([1.25, 3.25, 1, 1, 1, 1])
         with c1:
             if meta.get("image"):
-                st.image(meta["image"], width=100)
+                st.image(meta["image"], width=180)
         with c2:
             st.markdown(f"### {summary['Goalie']}")
             st.caption(f"{meta['team']} | {meta['height']} | {meta['weight']} | {meta['age']}")
