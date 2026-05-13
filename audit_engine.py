@@ -569,6 +569,228 @@ def build_league_leaderboard(game_phase, min_gp=None):
     }
 
 
+def _goalie_games_for_team(games, team_abbrev, game_phase):
+    filtered = {}
+    for game_id, report in games.items():
+        date_value = _report_date(game_id, report)
+        if not _matches_game_phase(date_value, game_phase, game_id):
+            continue
+
+        raw_game = _load_raw_game(game_id)
+        goalie_team = _get_goalie_team_abbrev(raw_game, report.get("goalie_id"))
+        if goalie_team == team_abbrev:
+            filtered[game_id] = report
+    return filtered
+
+
+def _team_game_stress_map(team_abbrev, game_phase):
+    rows = []
+    for game in get_team_games(team_abbrev):
+        if not _matches_game_phase(game.get("Date"), game_phase, game.get("Game_ID")):
+            continue
+
+        sequence_df = get_team_sequence_data(team_abbrev, game["Game_ID"])
+        if sequence_df.empty:
+            continue
+
+        wall_breaches = int((sequence_df["Duration"] >= 40).sum())
+        rows.append({
+            "Game_ID": str(game["Game_ID"]),
+            "Team_Sequences": int(len(sequence_df)),
+            "Team_Red_Line_Shifts": wall_breaches,
+            "Team_Avg_Sequence_Duration": round(float(sequence_df["Duration"].mean()), 1),
+        })
+
+    env = pd.DataFrame(rows)
+    if env.empty:
+        return {}, {
+            "team_median_sequences": 0.0,
+            "team_median_shots": 0.0,
+            "team_median_red_line": 0.0,
+        }
+
+    return env.set_index("Game_ID").to_dict("index"), {
+        "team_median_sequences": round(float(env["Team_Sequences"].median()), 3),
+        "team_median_red_line": round(float(env["Team_Red_Line_Shifts"].median()), 3),
+    }
+
+
+def _confidence_label(score):
+    if score >= 75:
+        return "High"
+    if score >= 45:
+        return "Medium"
+    return "Low"
+
+
+def _recommend_workload(row, starter_row):
+    if row["GP"] < 3:
+        return "Too Little Data"
+
+    if row["Goalie"] == starter_row["Goalie"]:
+        if row["SLC_Grade"] >= 55:
+            return "Keep Starter"
+        return "Starter At Risk"
+
+    grade_edge = row["SLC_Grade"] - starter_row["SLC_Grade"]
+    high_workload_edge = row["High_Workload_SLC_Grade"] - starter_row["High_Workload_SLC_Grade"]
+    bad_start_gap = row["Bad_Start_Rate"] - starter_row["Bad_Start_Rate"]
+
+    if grade_edge >= 10 and high_workload_edge >= 0 and bad_start_gap <= 0.15 and row["Role_Confidence"] >= 45:
+        return "Increase Workload"
+    if grade_edge >= 10 and row["Role_Confidence"] < 45:
+        return "Test Larger Role"
+    if grade_edge >= 10:
+        return "Protected Expansion"
+    if row["SLC_Grade"] >= 60 and row["Role_Confidence"] >= 45:
+        return "Useful Tandem Role"
+    return "Hold Role"
+
+
+def _recommendation_note(row, starter_row):
+    if row["Recommendation"] == "Increase Workload":
+        return (
+            f"{row['Goalie']} has a {row['SLC_Grade'] - starter_row['SLC_Grade']:+.0f} SLC Grade edge over "
+            f"{starter_row['Goalie']} and the edge survives starter-like workload."
+        )
+    if row["Recommendation"] == "Test Larger Role":
+        return (
+            f"{row['Goalie']} has the efficiency edge, but the workload evidence is still light. "
+            "Increase usage before making a full starter call."
+        )
+    if row["Recommendation"] == "Protected Expansion":
+        return (
+            f"{row['Goalie']} has the efficiency edge, but the stress-test profile is not clean enough for an immediate role flip."
+        )
+    if row["Recommendation"] == "Starter At Risk":
+        return (
+            f"{row['Goalie']} owns the workload, but the SLC Grade is below the level expected from a secure starter."
+        )
+    if row["Recommendation"] == "Keep Starter":
+        return (
+            f"{row['Goalie']} carries the largest role and grades strongly enough to keep the starter workload."
+        )
+    if row["Recommendation"] == "Useful Tandem Role":
+        return (
+            f"{row['Goalie']} grades well enough to protect the starter and absorb meaningful starts."
+        )
+    if row["Recommendation"] == "Too Little Data":
+        return "Not enough team-specific starts to make a workload recommendation."
+    return "Current role is supported by the available SLC evidence."
+
+
+def build_team_goalie_decision(team_abbrev, game_phase):
+    master_report = load_master_reports()
+    leaderboard = _build_phase_leaderboard(master_report, game_phase)
+    if leaderboard.empty:
+        return {
+            "summary": pd.DataFrame(),
+            "games": pd.DataFrame(),
+            "context": {},
+        }
+
+    team_board = leaderboard[leaderboard["Team"] == team_abbrev].copy()
+    if team_board.empty:
+        return {
+            "summary": pd.DataFrame(),
+            "games": pd.DataFrame(),
+            "context": {},
+        }
+
+    stress_map, context = _team_game_stress_map(team_abbrev, game_phase)
+    game_frames = []
+    for _, goalie_row in team_board.iterrows():
+        team_games = _goalie_games_for_team(
+            master_report.get(goalie_row["Goalie_Key"], {}),
+            team_abbrev,
+            game_phase,
+        )
+        game_log = _build_goalie_game_log(goalie_row["Goalie_Key"], team_games, game_phase)
+        if game_log.empty:
+            continue
+
+        game_log = game_log.copy()
+        game_log["Goalie"] = goalie_row["Goalie"]
+        for col in ["Team_Sequences", "Team_Red_Line_Shifts", "Team_Avg_Sequence_Duration"]:
+            game_log[col] = game_log["Game_ID"].map(lambda game_id: stress_map.get(str(game_id), {}).get(col, 0))
+        game_frames.append(game_log)
+
+    if not game_frames:
+        return {
+            "summary": pd.DataFrame(),
+            "games": pd.DataFrame(),
+            "context": context,
+        }
+
+    games = pd.concat(game_frames, ignore_index=True)
+    context["team_median_shots"] = round(float(games["Shots"].median()), 3)
+    context["team_median_goalie_sequences"] = round(float(games["Sequences"].median()), 3)
+    games["High_Workload_Start"] = (
+        (games["Sequences"] >= context["team_median_goalie_sequences"]) |
+        (games["Shots"] >= context["team_median_shots"]) |
+        (games["Team_Red_Line_Shifts"] >= context["team_median_red_line"])
+    )
+
+    games["Game_Survival_Grade"] = _grade_series(games["Pressure_Survival"])
+    games["Game_Relief_Grade"] = _grade_series(games["Relief_Efficiency"])
+    games["Game_SLC_Grade"] = ((games["Game_Survival_Grade"] + games["Game_Relief_Grade"]) / 2).round(0)
+
+    summary_rows = []
+    for _, goalie_row in team_board.iterrows():
+        goalie_games = games[games["Goalie"] == goalie_row["Goalie"]].copy()
+        if goalie_games.empty:
+            continue
+
+        high_games = goalie_games[goalie_games["High_Workload_Start"]]
+        game_grade_std = float(goalie_games["Game_SLC_Grade"].std()) if len(goalie_games) > 1 else 40.0
+        stability = round(max(0, min(100, 100 - (game_grade_std * 2))), 0)
+        high_workload_grade = round(float(high_games["Game_SLC_Grade"].mean()), 0) if not high_games.empty else 0.0
+        high_workload_starts = int(len(high_games))
+        bad_start_rate = _safe_div(int((goalie_games["Game_SLC_Grade"] < 40).sum()), len(goalie_games))
+        above_median_rate = _safe_div(int((goalie_games["Game_SLC_Grade"] >= 50).sum()), len(goalie_games))
+        gp_score = min((len(goalie_games) / 40) * 100, 100)
+        high_workload_score = min((high_workload_starts / 15) * 100, 100)
+        role_confidence = round((gp_score * 0.40) + (high_workload_score * 0.40) + (stability * 0.20), 0)
+
+        summary_rows.append({
+            "Goalie": goalie_row["Goalie"],
+            "GP": int(len(goalie_games)),
+            "SLC_Grade": goalie_row["SLC_Grade"],
+            "SLC_Profile": goalie_row["SLC_Profile"],
+            "Pressure_Survival": goalie_row["Pressure_Survival_Grade"],
+            "Pressure_Relief": goalie_row["Pressure_Relief_Grade"],
+            "Battery_Fit": goalie_row["Battery_Fit_Grade"],
+            "High_Workload_Starts": high_workload_starts,
+            "High_Workload_SLC_Grade": high_workload_grade,
+            "Above_Median_Start_Rate": above_median_rate,
+            "Bad_Start_Rate": bad_start_rate,
+            "Stability_Grade": stability,
+            "Role_Confidence": role_confidence,
+            "Confidence": _confidence_label(role_confidence),
+        })
+
+    summary = pd.DataFrame(summary_rows)
+    if summary.empty:
+        return {
+            "summary": summary,
+            "games": games,
+            "context": context,
+        }
+
+    starter = summary.sort_values(["GP", "SLC_Grade"], ascending=False).iloc[0].to_dict()
+    summary["Recommendation"] = summary.apply(lambda row: _recommend_workload(row, starter), axis=1)
+    summary["Decision_Note"] = summary.apply(lambda row: _recommendation_note(row, starter), axis=1)
+    summary = summary.sort_values(["Recommendation", "SLC_Grade"], ascending=[True, False])
+
+    context["starter"] = starter["Goalie"]
+    context["team"] = team_abbrev
+    return {
+        "summary": summary,
+        "games": games.sort_values(["Date", "Goalie"], ascending=[False, True]),
+        "context": context,
+    }
+
+
 def _build_verdict(goalie_row, leaderboard, game_phase):
     context = _qualified_context(leaderboard, game_phase)
     league_slc_seq = context["slc_per_sequence_median"]

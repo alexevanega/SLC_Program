@@ -6,7 +6,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from audit_engine import build_goalie_audit, build_league_leaderboard, build_selected_game_periods
+from audit_engine import (
+    build_goalie_audit,
+    build_league_leaderboard,
+    build_selected_game_periods,
+    build_team_goalie_decision,
+)
 from report_exporter import dataframe_csv
 from scrubber import get_player_metadata
 from update_local_data import update_local_data
@@ -28,6 +33,11 @@ def cached_goalie_audit(goalie_key, game_phase, master_version, audit_schema_ver
 @st.cache_data(show_spinner=False)
 def cached_league_leaderboard(game_phase, min_gp, master_version, league_schema_version=1):
     return build_league_leaderboard(game_phase, min_gp)
+
+
+@st.cache_data(show_spinner=False)
+def cached_team_goalie_decision(team_abbrev, game_phase, master_version, decision_schema_version=1):
+    return build_team_goalie_decision(team_abbrev, game_phase)
 
 
 def run_dashboard_data_update(game_type):
@@ -183,7 +193,11 @@ if leaderboard.empty:
     st.warning(f"No goalie data is available for {game_phase.lower()} games.")
     st.stop()
 
-tab_league, tab_audit = st.tabs(["League Leaderboard", "Individual Audit"])
+tab_league, tab_audit, tab_team_decision = st.tabs([
+    "League Leaderboard",
+    "Individual Audit",
+    "Team Goalie Decision",
+])
 
 with tab_league:
     st.header(f"League Leaderboard: {game_phase}")
@@ -356,3 +370,69 @@ with tab_audit:
             st.dataframe(selected_periods, hide_index=True)
 
     render_downloads(goalie_key, game_phase, game_log, evidence)
+
+with tab_team_decision:
+    st.header(f"Team Goalie Decision: {game_phase}")
+    available_teams = sorted(team for team in leaderboard["Team"].dropna().unique() if team)
+    if not available_teams:
+        st.info("No team-linked goalie data is available for this game set.")
+    else:
+        selected_team = st.selectbox("Select team", available_teams)
+        decision = cached_team_goalie_decision(selected_team, game_phase, get_master_report_version())
+        decision_table = decision["summary"]
+        decision_games = decision["games"]
+        decision_context = decision.get("context", {})
+
+        if decision_table.empty:
+            st.info(f"No goalie decision data is available for {selected_team}.")
+        else:
+            st.caption(
+                "This page asks whether a goalie's efficiency survives starter-like conditions. "
+                "High-workload starts are games at or above the team's median goalie sequences, shots, or 40-second wall burden."
+            )
+            dc1, dc2, dc3, dc4 = st.columns(4)
+            dc1.metric("Current Workload Leader", decision_context.get("starter", ""))
+            dc2.metric("Median Goalie Sequences", f"{decision_context.get('team_median_goalie_sequences', 0):.1f}")
+            dc3.metric("Median Shots", f"{decision_context.get('team_median_shots', 0):.1f}")
+            dc4.metric("Median Red-Line Shifts", f"{decision_context.get('team_median_red_line', 0):.1f}")
+
+            display_decision = decision_table.rename(columns={
+                "SLC_Grade": "SLC Grade",
+                "SLC_Profile": "SLC Profile",
+                "Pressure_Survival": "Pressure Survival",
+                "Pressure_Relief": "Pressure Relief",
+                "Battery_Fit": "Battery Fit",
+                "High_Workload_Starts": "High-Workload Starts",
+                "High_Workload_SLC_Grade": "High-Workload Grade",
+                "Above_Median_Start_Rate": "Above-Median Start Rate",
+                "Bad_Start_Rate": "Bad-Start Rate",
+                "Stability_Grade": "Stability",
+                "Role_Confidence": "Role Confidence",
+                "Decision_Note": "Decision Note",
+            })
+            decision_columns = [
+                "Goalie", "Recommendation", "Confidence", "GP", "SLC Grade",
+                "SLC Profile", "Pressure Survival", "Pressure Relief", "Battery Fit",
+                "High-Workload Starts", "High-Workload Grade", "Above-Median Start Rate",
+                "Bad-Start Rate", "Stability", "Role Confidence", "Decision Note",
+            ]
+            st.dataframe(display_decision[decision_columns], hide_index=True)
+
+            with st.expander("Starter-Like Game Evidence", expanded=False):
+                game_detail = decision_games.copy()
+                if not game_detail.empty:
+                    game_detail["Date"] = game_detail["Date"].apply(format_date)
+                    game_columns = [
+                        "Date", "Goalie", "Matchup", "High_Workload_Start",
+                        "Game_SLC_Grade", "Game_Survival_Grade", "Game_Relief_Grade",
+                        "SLC", "Sequences", "Shots", "Team_Red_Line_Shifts",
+                        "Pressure_Survival", "Relief_Efficiency", "Relief_Capture_Rate",
+                    ]
+                    st.dataframe(game_detail[game_columns], hide_index=True)
+
+            st.download_button(
+                "Download team goalie decision CSV",
+                data=dataframe_csv(display_decision),
+                file_name=f"slc_team_goalie_decision_{selected_team}_{game_phase.lower().replace(' ', '_')}.csv",
+                mime="text/csv",
+            )
