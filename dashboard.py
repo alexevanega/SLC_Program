@@ -223,7 +223,7 @@ with tab_league:
             "SLC_per_Sequence": "SLC / Sequence",
             "Sequences_per_Game": "Sequences / Game",
         })
-        st.dataframe(display_league, width="stretch", hide_index=True)
+        st.dataframe(display_league, hide_index=True)
         st.download_button(
             "Download league leaderboard CSV",
             data=dataframe_csv(display_league),
@@ -273,7 +273,7 @@ with tab_audit:
         tp2.metric("Avg 40s Wall Breaches", f"{profile_row['Avg 40s Wall Breaches']:.3f}")
         tp3.metric("40s Wall Efficiency", f"{profile_row['40s Wall Efficiency']:.1f}%")
         tp4.metric("Avg Sequence Duration", f"{profile_row['Avg Sequence Duration']:.1f}s")
-        st.dataframe(team_profile, width="stretch", hide_index=True)
+        st.dataframe(team_profile, hide_index=True)
         st.caption(
             "This section profiles the team environment, not the goalie. "
             "Use it as context for what kind of goalie efficiency the system asks for."
@@ -299,20 +299,20 @@ with tab_audit:
 
     if not translation.empty:
         with st.expander("Plain-English Metric Translation", expanded=False):
-            st.dataframe(translation, width="stretch", hide_index=True)
+            st.dataframe(translation, hide_index=True)
 
     with st.expander("Counting Stat Ingredients", expanded=False):
-        st.dataframe(evidence, width="stretch", hide_index=True)
+        st.dataframe(evidence, hide_index=True)
 
     if not context.empty:
         with st.expander("League Context", expanded=False):
-            st.dataframe(context, width="stretch", hide_index=True)
+            st.dataframe(context, hide_index=True)
 
     st.subheader("Game Pressure Survival vs Pressure Relief")
     if game_log.empty:
         st.info("No game-level efficiency data is available for this goalie and game set.")
     else:
-        st.plotly_chart(build_efficiency_workload_chart(game_log, summary, verdict), width="stretch")
+        st.plotly_chart(build_efficiency_workload_chart(game_log, summary, verdict))
         st.caption(
             "Each dot is one game. Higher means better pressure survival; farther right means more pressure relief. "
             "The best efficiency profile lives toward the upper-right."
@@ -334,12 +334,10 @@ with tab_audit:
         display_log["Date"] = display_log["Date"].apply(format_date)
         st.dataframe(
             display_log.sort_values("Date", ascending=False)[game_columns],
-            width="stretch",
         )
         with st.expander("Game-Level Counting Details", expanded=False):
             st.dataframe(
                 display_log.sort_values("Date", ascending=False)[detail_game_columns],
-                width="stretch",
             )
     else:
         st.info("No games are available for this goalie and game set.")
@@ -355,6 +353,6 @@ with tab_audit:
         if selected_periods.empty:
             st.info("No period detail is available for that game.")
         else:
-            st.dataframe(selected_periods, width="stretch", hide_index=True)
+            st.dataframe(selected_periods, hide_index=True)
 
     render_downloads(goalie_key, game_phase, game_log, evidence)
