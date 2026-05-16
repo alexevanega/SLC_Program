@@ -16,7 +16,6 @@ from utility import (
 )
 
 
-PLAYOFF_CUTOFF = pd.Timestamp("2026-04-16")
 LEADERBOARD_MIN_RANKING_SEQUENCES = 5
 
 
@@ -145,18 +144,11 @@ def _game_type_from_id(game_id):
 
 
 def _matches_game_phase(date_value, game_phase, game_id=None):
-    parsed_date = pd.to_datetime(date_value, errors="coerce")
     game_type = _game_type_from_id(game_id)
 
     if game_phase == "Playoffs":
-        if pd.notna(parsed_date):
-            return parsed_date > PLAYOFF_CUTOFF
         return game_type == 3
 
-    if game_type == 1:
-        return False
-    if pd.notna(parsed_date):
-        return parsed_date <= PLAYOFF_CUTOFF and game_type != 3
     return game_type == 2
 
 

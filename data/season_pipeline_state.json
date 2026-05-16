@@ -1,0 +1,16 @@
+{
+    "season": "20232024",
+    "game_type": 2,
+    "unique_games": 1312,
+    "schedule_updates": 1312,
+    "raw_directory": "data\\raw_games\\20232024",
+    "fetched": 1312,
+    "cached": 0,
+    "empty": 0,
+    "failed": 0,
+    "raw_complete": true,
+    "processed_complete": true,
+    "created_at": "2026-05-16T13:13:17",
+    "processed_at": "2026-05-16T13:15:40",
+    "master_report_path": "data\\processedGames\\master_report_20232024.json"
+}

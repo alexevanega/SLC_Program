@@ -15,35 +15,49 @@ from audit_engine import (
 )
 from report_exporter import dataframe_csv
 from scrubber import get_player_metadata
-from update_local_data import update_local_data
-from utility import build_late_xga_collapse_proof, clear_data_caches
+from update_local_data import (
+    build_processed_season_report,
+    fetch_raw_season_data,
+    has_pending_season_processing,
+    load_season_pipeline_state,
+    update_local_data,
+)
+from slc_prediction_engine import build_late_xga_collapse_proof
+from utility import (
+    available_master_report_seasons,
+    clear_data_caches,
+    master_report_path,
+    set_active_data_season,
+)
 from utility import _get_goalie_team_abbrev, _late_xga, _load_raw_game, load_master_reports
 
 
-MASTER_REPORT_PATH = Path("./data/processedGames/master_report.json")
-
-
-def get_master_report_version():
-    return MASTER_REPORT_PATH.stat().st_mtime_ns if MASTER_REPORT_PATH.exists() else 0
+def get_master_report_version(season):
+    report_path = Path(master_report_path(season))
+    return report_path.stat().st_mtime_ns if report_path.exists() else 0
 
 
 @st.cache_data(show_spinner=False)
-def cached_goalie_audit(goalie_key, game_phase, master_version, audit_schema_version=2):
+def cached_goalie_audit(goalie_key, game_phase, season, master_version, audit_schema_version=2):
+    set_active_data_season(season)
     return build_goalie_audit(goalie_key, game_phase)
 
 
 @st.cache_data(show_spinner=False)
-def cached_league_leaderboard(game_phase, min_gp, master_version, league_schema_version=1):
+def cached_league_leaderboard(game_phase, min_gp, season, master_version, league_schema_version=1):
+    set_active_data_season(season)
     return build_league_leaderboard(game_phase, min_gp)
 
 
 @st.cache_data(show_spinner=False)
-def cached_team_goalie_decision(team_abbrev, game_phase, master_version, decision_schema_version=1):
+def cached_team_goalie_decision(team_abbrev, game_phase, season, master_version, decision_schema_version=1):
+    set_active_data_season(season)
     return build_team_goalie_decision(team_abbrev, game_phase)
 
 
 @st.cache_data(show_spinner=False)
-def cached_late_xga_collapse_proof(master_version, proof_schema_version=5):
+def cached_late_xga_collapse_proof(season, master_version, proof_schema_version=5):
+    set_active_data_season(season)
     return build_late_xga_collapse_proof()
 
 
@@ -290,6 +304,28 @@ def run_dashboard_data_update(game_type):
     return summary or {}, buffer.getvalue()
 
 
+def run_fetch_raw_season_data(season, game_type, progress_callback):
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        summary = fetch_raw_season_data(
+            season=season,
+            game_type=game_type,
+            progress_callback=progress_callback,
+        )
+    return summary or {}, buffer.getvalue()
+
+
+def run_build_processed_season_report(season, game_type, progress_callback):
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        summary = build_processed_season_report(
+            season=season,
+            game_type=game_type,
+            progress_callback=progress_callback,
+        )
+    return summary or {}, buffer.getvalue()
+
+
 def format_date(value):
     parsed = pd.to_datetime(value, errors="coerce")
     if pd.isna(parsed):
@@ -411,7 +447,8 @@ def build_efficiency_workload_chart(game_log, summary, verdict):
 
 
 @st.cache_data(show_spinner=False)
-def cached_team_late_xga_volatility(game_phase, master_version, sandbox_schema_version=1):
+def cached_team_late_xga_volatility(game_phase, season, master_version, sandbox_schema_version=1):
+    set_active_data_season(season)
     return build_team_late_xga_volatility(game_phase)
 
 
@@ -423,16 +460,9 @@ def _dashboard_game_type(game_id):
 
 
 def _dashboard_matches_phase(date_value, game_phase, game_id):
-    parsed_date = pd.to_datetime(date_value, errors="coerce")
     game_type = _dashboard_game_type(game_id)
     if game_phase == "Playoffs":
-        if pd.notna(parsed_date):
-            return parsed_date > pd.Timestamp("2026-04-16")
         return game_type == 3
-    if game_type == 1:
-        return False
-    if pd.notna(parsed_date):
-        return parsed_date <= pd.Timestamp("2026-04-16") and game_type != 3
     return game_type == 2
 
 
@@ -485,8 +515,8 @@ def build_team_late_xga_volatility(game_phase):
     return pd.concat(frames, ignore_index=True)
 
 
-def render_late_xga_volatility_sandbox(game_phase):
-    volatility = cached_team_late_xga_volatility(game_phase, get_master_report_version())
+def render_late_xga_volatility_sandbox(game_phase, season):
+    volatility = cached_team_late_xga_volatility(game_phase, season, get_master_report_version(season))
     st.subheader("Team Late-xGA Volatility Sandbox")
     if volatility.empty:
         st.info(f"No team late-xGA data is available for {game_phase.lower()} games.")
@@ -579,8 +609,8 @@ def render_late_xga_volatility_sandbox(game_phase):
     )
 
 
-def render_predictive_label_comparison():
-    proof = cached_late_xga_collapse_proof(get_master_report_version())
+def render_predictive_label_comparison(season):
+    proof = cached_late_xga_collapse_proof(season, get_master_report_version(season))
     model_lift_by_profile = proof.get("model_lift_by_profile", pd.DataFrame())
     profile_weight_optimizer = proof.get("profile_weight_optimizer", pd.DataFrame())
     profile_weight_validation = proof.get("profile_weight_validation", pd.DataFrame())
@@ -620,10 +650,144 @@ def render_predictive_label_comparison():
         )
 
 
+def render_season_data_tool(game_phase):
+    game_type = {"Regular Season": 2, "Playoffs": 3}[game_phase]
+    state = load_season_pipeline_state()
+    pending = has_pending_season_processing()
+
+    with st.container(border=True):
+        tool_title, tool_status = st.columns([1.2, 2.8])
+        with tool_title:
+            st.markdown("**Season Data Tool**")
+        with tool_status:
+            if pending:
+                st.caption(
+                    f"Pending processing: {state.get('season')} raw data is fetched. "
+                    "Build the processed report before fetching another season."
+                )
+            elif state.get("processed_complete"):
+                st.caption(f"Last processed season: {state.get('season')}")
+            else:
+                st.caption("Fetch a full season into raw games, then build that season's master report.")
+
+        if st.session_state.get("season_tool_notice"):
+            st.success(st.session_state.pop("season_tool_notice"))
+        if st.session_state.get("season_tool_error"):
+            st.error(st.session_state.pop("season_tool_error"))
+
+        c1, c2, c3, c4 = st.columns([1.2, 1.2, 1.3, 1.3])
+        with c1:
+            season = st.text_input("Season", value=str(state.get("season") or "20242025"))
+        with c2:
+            auto_continue = st.checkbox("Continue automatically", value=False)
+        with c3:
+            fetch_clicked = st.button(
+                "Fetch Raw Season Data",
+                disabled=pending,
+                use_container_width=True,
+            )
+        with c4:
+            build_season = str(state.get("season") or season).strip()
+            build_clicked = st.button(
+                "Build Processed Season Report",
+                disabled=not pending,
+                use_container_width=True,
+            )
+
+        progress_bar = st.progress(0)
+        progress_text = st.empty()
+
+        def update_progress(progress):
+            progress_bar.progress(min(int(progress.get("percent", 0)), 100))
+            progress_text.caption(
+                f"{progress.get('stage', '')}: {progress.get('current', 0)}/"
+                f"{progress.get('total', 0)} ({progress.get('percent', 0):.1f}%) "
+                f"{progress.get('message', '')}"
+            )
+
+        if fetch_clicked:
+            season = season.strip()
+            if not season:
+                st.error("Enter a season before fetching raw data.")
+                return
+
+            with st.spinner(f"Fetching raw game data for {season}."):
+                try:
+                    fetch_summary, fetch_log = run_fetch_raw_season_data(season, game_type, update_progress)
+                    st.success(
+                        f"Raw fetch complete for {season}: "
+                        f"{fetch_summary.get('fetched', 0)} fetched, "
+                        f"{fetch_summary.get('cached', 0)} cached, "
+                        f"{fetch_summary.get('failed', 0)} failed."
+                    )
+                    with st.expander("Raw fetch log"):
+                        st.text(fetch_log)
+
+                    if auto_continue:
+                        with st.spinner(f"Building processed report for {season}."):
+                            build_summary, build_log = run_build_processed_season_report(
+                                season,
+                                game_type,
+                                update_progress,
+                            )
+                            clear_data_caches()
+                            st.cache_data.clear()
+                            st.success(
+                                f"Processed report complete: "
+                                f"{build_summary.get('processed_reports', 0)} goalie reports written."
+                            )
+                            with st.expander("Processed report log"):
+                                st.text(build_log)
+                    else:
+                        st.info("Raw data is ready. The processed report button is now available.")
+                    st.session_state["season_tool_notice"] = (
+                        f"Raw fetch complete for {season}. "
+                        "Processed report was built automatically."
+                        if auto_continue
+                        else f"Raw fetch complete for {season}. Build processed report is now available."
+                    )
+                    st.rerun()
+                except Exception as exc:
+                    st.session_state["season_tool_error"] = f"Season raw fetch failed: {exc}"
+                    st.rerun()
+
+        if build_clicked:
+            with st.spinner(f"Building processed report for {build_season}."):
+                try:
+                    build_summary, build_log = run_build_processed_season_report(
+                        build_season,
+                        game_type,
+                        update_progress,
+                    )
+                    clear_data_caches()
+                    st.cache_data.clear()
+                    st.success(
+                        f"Processed report complete: "
+                        f"{build_summary.get('processed_reports', 0)} goalie reports written."
+                    )
+                    with st.expander("Processed report log"):
+                        st.text(build_log)
+                    st.session_state["season_tool_notice"] = (
+                        f"Processed report complete for {build_season}: "
+                        f"{build_summary.get('processed_reports', 0)} goalie reports written."
+                    )
+                    st.rerun()
+                except Exception as exc:
+                    st.session_state["season_tool_error"] = f"Processed report build failed: {exc}"
+                    st.rerun()
+
+
 st.set_page_config(layout="wide", page_title="SLC Dashboard")
 st.title("System Load Coefficient Dashboard")
 
-top_phase, top_update_button = st.columns([2, 1])
+available_seasons = available_master_report_seasons()
+if "20252026" not in available_seasons:
+    available_seasons.insert(0, "20252026")
+
+top_season, top_phase, top_update_button = st.columns([1.2, 2, 1])
+with top_season:
+    selected_season = st.selectbox("Season", available_seasons, index=0)
+    set_active_data_season(selected_season)
 with top_phase:
     game_phase = st.radio("Game Set", ["Regular Season", "Playoffs"], horizontal=True)
 with top_update_button:
@@ -648,12 +812,14 @@ if update_requested:
         except Exception as exc:
             st.error(f"Local data update failed: {exc}")
 
+render_season_data_tool(game_phase)
+
 # Temporarily disabled while comparing pre-label and post-label predictive tables.
-# render_late_xga_volatility_sandbox(game_phase)
-render_predictive_label_comparison()
+# render_late_xga_volatility_sandbox(game_phase, selected_season)
+render_predictive_label_comparison(selected_season)
 st.stop()
 
-seed_audit = cached_goalie_audit("", game_phase, get_master_report_version())
+seed_audit = cached_goalie_audit("", game_phase, selected_season, get_master_report_version(selected_season))
 leaderboard = seed_audit["leaderboard"]
 
 if leaderboard.empty:
@@ -671,7 +837,7 @@ with tab_league:
     default_min_gp = 20 if game_phase == "Regular Season" else 1
     min_gp = st.number_input("Minimum GP", min_value=1, max_value=82, value=default_min_gp, step=1)
 
-    league_view = cached_league_leaderboard(game_phase, min_gp, get_master_report_version())
+    league_view = cached_league_leaderboard(game_phase, min_gp, selected_season, get_master_report_version(selected_season))
     qualified = league_view["qualified"]
     league_context = league_view.get("context", {})
 
@@ -688,7 +854,7 @@ with tab_league:
         lm3.metric("Median Survival Grade", f"{league_context.get('pressure_survival_grade_median', 0):.0f}")
         lm4.metric("Median Relief Grade", f"{league_context.get('pressure_relief_grade_median', 0):.0f}")
 
-        proof = cached_late_xga_collapse_proof(get_master_report_version())
+        proof = cached_late_xga_collapse_proof(selected_season, get_master_report_version(selected_season))
         proof_summary = proof.get("summary", {})
         proof_risk = proof.get("risk_by_schedule", pd.DataFrame())
         model_lift = proof.get("model_lift", pd.DataFrame())
@@ -776,7 +942,7 @@ with tab_audit:
     goalie_options = leaderboard.sort_values("Goalie")["Goalie"].tolist()
     selected_goalie = st.selectbox("Select goalie", goalie_options)
     goalie_key = selected_goalie.lower().replace(" ", "_")
-    audit = cached_goalie_audit(goalie_key, game_phase, get_master_report_version())
+    audit = cached_goalie_audit(goalie_key, game_phase, selected_season, get_master_report_version(selected_season))
 
     summary = audit["summary"]
     verdict = audit["verdict"]
@@ -933,7 +1099,7 @@ with tab_team_decision:
         st.info("No team-linked goalie data is available for this game set.")
     else:
         selected_team = st.selectbox("Select team", available_teams)
-        decision = cached_team_goalie_decision(selected_team, game_phase, get_master_report_version())
+        decision = cached_team_goalie_decision(selected_team, game_phase, selected_season, get_master_report_version(selected_season))
         decision_table = decision["summary"]
         decision_games = decision["games"]
         decision_context = decision.get("context", {})
