@@ -234,7 +234,7 @@ def get_player_metadata(goalie_id):
             "weight": f"{data.get('weightInPounds', 0)} lbs",
             "age": data.get('birthDate', "N/A"),
             "team": data.get('currentTeamAbbrev', "N/A"),
-            "image": img_path,
+            "image": data.get('headshot', img_path),
             "position": "G"
         }
     except:

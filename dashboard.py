@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+import numpy as np
 
 from audit_engine import (
     build_goalie_audit,
@@ -15,7 +16,8 @@ from audit_engine import (
 from report_exporter import dataframe_csv
 from scrubber import get_player_metadata
 from update_local_data import update_local_data
-from utility import clear_data_caches
+from utility import build_late_xga_collapse_proof, clear_data_caches
+from utility import _get_goalie_team_abbrev, _late_xga, _load_raw_game, load_master_reports
 
 
 MASTER_REPORT_PATH = Path("./data/processedGames/master_report.json")
@@ -40,6 +42,247 @@ def cached_team_goalie_decision(team_abbrev, game_phase, master_version, decisio
     return build_team_goalie_decision(team_abbrev, game_phase)
 
 
+@st.cache_data(show_spinner=False)
+def cached_late_xga_collapse_proof(master_version, proof_schema_version=5):
+    return build_late_xga_collapse_proof()
+
+
+def format_collapse_proof_table(proof_risk):
+    target_labels = {
+        "Future_Team_Relative_Collapse_H1": ("Above team recent baseline", "Next game"),
+        "Future_Team_Relative_Collapse_H3": ("Above team recent baseline", "Next 3 games"),
+        "Future_Team_Relative_Collapse_H5": ("Above team recent baseline", "Next 5 games"),
+    }
+
+    rows = []
+    for _, row in proof_risk.iterrows():
+        collapse_type, window = target_labels.get(row["Target"], (row["Target"], ""))
+        gap = float(row["Low_Minus_High"]) * 100
+        rows.append({
+            "Collapse Type": collapse_type,
+            "Schedule": row["Schedule_Context"],
+            "Window": window,
+            "Low Recent SLC": f"{float(row['Low_SLC_Risk']) * 100:.1f}%",
+            "High Recent SLC": f"{float(row['High_SLC_Risk']) * 100:.1f}%",
+            "Low-SLC Added Risk": f"{gap:+.1f} pts",
+            "Read": "Supports SLC heatsink signal" if gap > 0 else "No low-SLC risk edge",
+            "Sample": f"{int(row['N']):,}",
+        })
+
+    order = ["Stressed", "Normal"]
+    display = pd.DataFrame(rows)
+    if display.empty:
+        return display
+    display["Schedule_Order"] = display["Schedule"].apply(lambda value: order.index(value) if value in order else 99)
+    display["Window_Order"] = display["Window"].map({
+        "Next game": 1,
+        "Next 3 games": 3,
+        "Next 5 games": 5,
+    }).fillna(99)
+    display["Collapse_Order"] = display["Collapse Type"].map({
+        "Above team recent baseline": 1,
+    }).fillna(99)
+    display = display.sort_values(["Schedule_Order", "Collapse_Order", "Window_Order"])
+    return display.drop(columns=["Schedule_Order", "Collapse_Order", "Window_Order"])
+
+
+def format_model_lift_table(model_lift):
+    if model_lift.empty:
+        return model_lift
+
+    rows = []
+    for _, row in model_lift.iterrows():
+        separation = float(row["Risk_Separation"]) * 100
+        added_lift = row["Added_Lift_vs_Previous"]
+        lift_text = "baseline" if pd.isna(added_lift) else f"{float(added_lift) * 100:+.1f} pts"
+        lift_vs_load = row.get("Lift_vs_Load_Baseline")
+        lift_vs_load_text = "baseline" if pd.isna(lift_vs_load) else f"{float(lift_vs_load) * 100:+.1f} pts"
+
+        if row["Model"] == "Schedule + Load + SLC":
+            read = "SLC improved separation" if pd.notna(added_lift) and added_lift > 0 else "No SLC lift"
+        elif row["Model"] == "Schedule + Load + Relief Rate":
+            read = "Relief improved separation" if pd.notna(added_lift) and added_lift > 0 else "No relief lift"
+        elif row["Model"] == "Schedule + Load + SLC + Relief Rate":
+            read = "Relief adds beyond SLC" if pd.notna(added_lift) and added_lift > 0 else "No added relief beyond SLC"
+        elif row["Model"] == "Schedule + Load + SLC + Relief + Cost":
+            read = "Cost adds beyond relief" if pd.notna(added_lift) and added_lift > 0 else "No added cost lift"
+        elif row["Model"] == "Schedule + Recent Load":
+            read = "Load improved baseline" if pd.notna(added_lift) and added_lift > 0 else "No load lift"
+        else:
+            read = "Starting baseline"
+
+        rows.append({
+            "Target": row["Target"],
+            "Schedule": row["Schedule_Context"],
+            "Model": row["Model"],
+            "Low Predicted Risk": f"{float(row['Low_Predicted_Risk_Rate']) * 100:.1f}%",
+            "High Predicted Risk": f"{float(row['High_Predicted_Risk_Rate']) * 100:.1f}%",
+            "Risk Separation": f"{separation:+.1f} pts",
+            "Added Lift": lift_text,
+            "Lift vs Load": lift_vs_load_text,
+            "Read": read,
+            "Sample": f"{int(row['N']):,}",
+        })
+
+    schedule_order = {"Stressed": 1, "Normal": 2, "All": 3}
+    model_order = {
+        "Schedule Only": 1,
+        "Schedule + Recent Load": 2,
+        "Schedule + Load + SLC": 3,
+        "Schedule + Load + Relief Rate": 4,
+        "Schedule + Load + SLC + Relief Rate": 5,
+        "Schedule + Load + SLC + Relief + Cost": 6,
+    }
+    display = pd.DataFrame(rows)
+    display["Schedule_Order"] = display["Schedule"].map(schedule_order).fillna(99)
+    display["Model_Order"] = display["Model"].map(model_order).fillna(99)
+    display = display.sort_values(["Target", "Schedule_Order", "Model_Order"])
+    return display.drop(columns=["Schedule_Order", "Model_Order"])
+
+
+def format_profile_model_lift_table(model_lift):
+    if model_lift.empty:
+        return model_lift
+
+    rows = []
+    for _, row in model_lift.iterrows():
+        lift_vs_load = row.get("Lift_vs_Load_Baseline")
+        rows.append({
+            "Profile": row["Volatility_Profile"],
+            "Model": row["Model"],
+            "Low Predicted Risk": f"{float(row['Low_Predicted_Risk_Rate']) * 100:.1f}%",
+            "High Predicted Risk": f"{float(row['High_Predicted_Risk_Rate']) * 100:.1f}%",
+            "Risk Separation": f"{float(row['Risk_Separation']) * 100:+.1f} pts",
+            "Lift vs Load": "baseline" if pd.isna(lift_vs_load) else f"{float(lift_vs_load) * 100:+.1f} pts",
+            "Sample": f"{int(row['N']):,}",
+        })
+
+    profile_order = {
+        "Stable": 1,
+        "Brittle": 2,
+        "Controlled Chaos": 3,
+        "Volatile": 4,
+    }
+    model_order = {
+        "Schedule + Recent Load": 1,
+        "Schedule + Recent Load + SLC": 2,
+        "Schedule + Recent Load + Sovereignty": 3,
+        "Schedule + Recent Load + Relief Rate": 4,
+        "Schedule + Recent Load + Pressure": 5,
+    }
+    display = pd.DataFrame(rows)
+    display["Profile_Order"] = display["Profile"].map(profile_order).fillna(99)
+    display["Model_Order"] = display["Model"].map(model_order).fillna(99)
+    display = display.sort_values(["Profile_Order", "Model_Order"])
+    return display.drop(columns=["Profile_Order", "Model_Order"])
+
+
+def format_profile_weight_optimizer_table(optimizer):
+    if optimizer.empty:
+        return optimizer
+
+    rows = []
+    for _, row in optimizer.iterrows():
+        rows.append({
+            "Profile": row["Volatility_Profile"],
+            "Sovereignty Weight": f"{float(row['Sovereignty_Weight']):.1f}",
+            "Relief Weight": f"{float(row['Relief_Weight']):.1f}",
+            "Pressure Weight": f"{float(row['Pressure_Weight']):.1f}",
+            "Base Separation": f"{float(row['Base_Separation']) * 100:+.1f} pts",
+            "Optimized SLC Separation": f"{float(row['Optimized_SLC_Separation']) * 100:+.1f} pts",
+            "Lift vs Load": f"{float(row['Lift_vs_Load_Baseline']) * 100:+.1f} pts",
+            "Sample": f"{int(row['N']):,}",
+        })
+
+    profile_order = {
+        "Stable": 1,
+        "Brittle": 2,
+        "Controlled Chaos": 3,
+        "Volatile": 4,
+    }
+    display = pd.DataFrame(rows)
+    display["Profile_Order"] = display["Profile"].map(profile_order).fillna(99)
+    display = display.sort_values("Profile_Order")
+    return display.drop(columns=["Profile_Order"])
+
+
+def format_profile_weight_validation_table(validation):
+    if validation.empty:
+        return validation
+
+    rows = []
+    for _, row in validation.iterrows():
+        rows.append({
+            "Profile": row["Volatility_Profile"],
+            "Sovereignty Weight": f"{float(row['Sovereignty_Weight']):.1f}",
+            "Relief Weight": f"{float(row['Relief_Weight']):.1f}",
+            "Pressure Weight": f"{float(row['Pressure_Weight']):.1f}",
+            "Tuning Lift": f"{float(row['Tuning_Lift']) * 100:+.1f} pts",
+            "Holdout Base": f"{float(row['Holdout_Base_Separation']) * 100:+.1f} pts",
+            "Holdout SLC": f"{float(row['Holdout_SLC_Separation']) * 100:+.1f} pts",
+            "Holdout Lift": f"{float(row['Holdout_Lift']) * 100:+.1f} pts",
+            "Sample": f"{int(row['N']):,}",
+        })
+
+    profile_order = {
+        "Stable": 1,
+        "Brittle": 2,
+        "Controlled Chaos": 3,
+        "Volatile": 4,
+    }
+    display = pd.DataFrame(rows)
+    display["Profile_Order"] = display["Profile"].map(profile_order).fillna(99)
+    display = display.sort_values("Profile_Order")
+    return display.drop(columns=["Profile_Order"])
+
+
+def format_same_game_heatsink_table(same_game_risk):
+    if same_game_risk.empty:
+        return same_game_risk
+
+    rows = []
+    for _, row in same_game_risk.iterrows():
+        gap = float(row["Low_Minus_High"]) * 100
+        rows.append({
+            "Game Context": row["Context"],
+            "Early Signal": row["Signal"],
+            "Low Signal P3 Collapse": f"{float(row['Low_Risk']) * 100:.1f}%",
+            "High Signal P3 Collapse": f"{float(row['High_Risk']) * 100:.1f}%",
+            "Low-Signal Added Risk": f"{gap:+.1f} pts",
+            "Read": "Supports same-game heatsink signal" if gap > 0 else "No same-game edge",
+            "Sample": f"{int(row['N']):,}",
+        })
+
+    display = pd.DataFrame(rows)
+    context_order = {"High early pressure": 1, "Lower early pressure": 2}
+    signal_order = {"Early SLC": 1, "Early relief rate": 2}
+    display["Context_Order"] = display["Game Context"].map(context_order).fillna(99)
+    display["Signal_Order"] = display["Early Signal"].map(signal_order).fillna(99)
+    display = display.sort_values(["Context_Order", "Signal_Order"])
+    return display.drop(columns=["Context_Order", "Signal_Order"])
+
+
+def format_same_game_lift_table(same_game_lift):
+    if same_game_lift.empty:
+        return same_game_lift
+
+    rows = []
+    for _, row in same_game_lift.iterrows():
+        added_lift = row["Added_Lift_vs_Previous"]
+        rows.append({
+            "Model": row["Model"],
+            "Low Predicted Risk": f"{float(row['Low_Predicted_Risk_Rate']) * 100:.1f}%",
+            "High Predicted Risk": f"{float(row['High_Predicted_Risk_Rate']) * 100:.1f}%",
+            "Risk Separation": f"{float(row['Risk_Separation']) * 100:+.1f} pts",
+            "Added Lift": "baseline" if pd.isna(added_lift) else f"{float(added_lift) * 100:+.1f} pts",
+            "Added Signal Direction": row.get("Added_Signal_Direction", ""),
+            "Read": "Adds signal" if pd.notna(added_lift) and added_lift > 0 else ("Baseline" if pd.isna(added_lift) else "No added signal"),
+            "Sample": f"{int(row['N']):,}",
+        })
+
+    return pd.DataFrame(rows)
+
+
 def run_dashboard_data_update(game_type):
     buffer = io.StringIO()
     with contextlib.redirect_stdout(buffer):
@@ -57,14 +300,25 @@ def format_date(value):
 def render_goalie_header(summary):
     meta = get_player_metadata(summary["ID"])
     with st.container(border=True):
-        c1, c2, c3, c4, c5, c6 = st.columns([1.25, 3.25, 1, 1, 1, 1])
+        c1, c2, c3, c4, c5, c6 = st.columns([1.1, 3.1, 1, 1, 1, 1])
         with c1:
             if meta.get("image"):
-                st.image(meta["image"], width=180)
+                st.markdown(f"""
+                    <div style="width:100%; height:250px; overflow:hidden; border-radius:8px;">
+                        <img src="{meta["image"]}" style="width:100%; height:90%; object-fit:cover; display:block;" alt="{summary['Goalie']}">
+                    </div>
+                """, unsafe_allow_html=True)
         with c2:
-            st.markdown(f"### {summary['Goalie']}")
-            st.caption(f"{meta['team']} | {meta['height']} | {meta['weight']} | {meta['age']}")
-            st.caption(f"{summary['SLC_Profile']} | SLC converts pressure survival, pressure relief, and battery fit into one goalie efficiency grade.")
+            st.markdown(f"""
+                            <div class="player-card">
+                                <h3>{summary['Goalie']}</h3>
+                                <div class="meta" style="padding-bottom: 20px; padding-top: 10px">{meta['team']} | {meta['height']} | {meta['weight']} | {meta['age']}</div>
+                                <div class="note" style="padding-bottom: 30px; padding-top: 10px">SLC Profile : {summary['SLC_Profile']}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+            st.caption(
+                "System Load Coefficient is the overall goalie grade for how well they perform inside their team system."
+                "It balances pressure survival, pressure relief, and battery fit, while minimizing the impact of volume-driven inflation.")
         with c3:
             st.metric("SLC Grade", f"{summary['SLC_Grade']:.0f}")
         with c4:
@@ -107,26 +361,26 @@ def build_efficiency_workload_chart(game_log, summary, verdict):
             x=chart_df["Relief_Efficiency"],
             y=chart_df["Pressure_Survival"],
             mode="markers",
-            marker=dict(
+                marker=dict(
                 size=10,
-                color=chart_df["SLC_per_Sequence"],
+                color=chart_df["Pressure_Efficiency_per_Sequence"],
                 colorscale="RdYlGn",
                 showscale=True,
-                colorbar=dict(title="SLC / Seq"),
+                colorbar=dict(title="Pressure Efficiency"),
                 line=dict(width=1, color="rgba(40,40,40,0.45)")
             ),
             customdata=chart_df[[
                 "Date_Label", "Matchup", "SLC", "Net_Load_per_Sequence",
-                "Relief_Capture_Rate", "SLC_per_Sequence", "Sequences", "Shots"
+                "Relief_Capture_Rate", "Pressure_Efficiency_per_Sequence", "Sequences", "Shots"
             ]],
             hovertemplate=(
                 "%{customdata[0]} %{customdata[1]}<br>"
                 "Relief Efficiency: %{x:.3f}<br>"
                 "Pressure Survival: %{y:.3f}<br>"
-                "Game SLC: %{customdata[2]:.3f}<br>"
                 "Net Load / Sequence: %{customdata[3]:.3f}<br>"
                 "Relief Capture Rate: %{customdata[4]:.3f}<br>"
-                "SLC / Sequence: %{customdata[5]:.3f}<br>"
+                "Pressure Efficiency per Sequence: %{customdata[5]:.3f}<br>"
+                "Total Pressure Efficiency: %{customdata[2]:.3f}<br>"
                 "Sequences: %{customdata[6]}<br>"
                 "Shots: %{customdata[7]}<extra></extra>"
             ),
@@ -156,21 +410,229 @@ def build_efficiency_workload_chart(game_log, summary, verdict):
     return fig
 
 
-st.set_page_config(layout="wide", page_title="SLC Dashboard")
-st.title("SLC Dashboard")
+@st.cache_data(show_spinner=False)
+def cached_team_late_xga_volatility(game_phase, master_version, sandbox_schema_version=1):
+    return build_team_late_xga_volatility(game_phase)
 
-top_phase, top_update_scope, top_update_button = st.columns([2, 2, 1])
+
+def _dashboard_game_type(game_id):
+    game_id = str(game_id or "")
+    if len(game_id) >= 6 and game_id[4:6].isdigit():
+        return int(game_id[4:6])
+    return None
+
+
+def _dashboard_matches_phase(date_value, game_phase, game_id):
+    parsed_date = pd.to_datetime(date_value, errors="coerce")
+    game_type = _dashboard_game_type(game_id)
+    if game_phase == "Playoffs":
+        if pd.notna(parsed_date):
+            return parsed_date > pd.Timestamp("2026-04-16")
+        return game_type == 3
+    if game_type == 1:
+        return False
+    if pd.notna(parsed_date):
+        return parsed_date <= pd.Timestamp("2026-04-16") and game_type != 3
+    return game_type == 2
+
+
+def build_team_late_xga_volatility(game_phase):
+    rows = []
+    for games in load_master_reports().values():
+        for game_id, report in games.items():
+            raw_game = _load_raw_game(game_id)
+            date_value = report.get("gameDate") or raw_game.get("gameDate")
+            if not _dashboard_matches_phase(date_value, game_phase, game_id):
+                continue
+            team = _get_goalie_team_abbrev(raw_game, report.get("goalie_id"))
+            if not team:
+                continue
+            rows.append({
+                "Team": team,
+                "Game_ID": str(game_id),
+                "Date": pd.to_datetime(date_value, errors="coerce"),
+                "Late_xGA": _late_xga(report),
+            })
+
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    team_games = (
+        df.dropna(subset=["Date"])
+        .groupby(["Team", "Game_ID", "Date"], as_index=False)
+        .agg({"Late_xGA": "sum"})
+        .sort_values(["Team", "Date", "Game_ID"])
+    )
+    if team_games.empty:
+        return team_games
+
+    frames = []
+    for _, group in team_games.groupby("Team"):
+        group = group.sort_values(["Date", "Game_ID"]).reset_index(drop=True)
+        group["Rolling_Avg"] = group["Late_xGA"].shift(1).rolling(5, min_periods=3).mean()
+        group["Rolling_Fluctuation"] = group["Late_xGA"].shift(1).rolling(5, min_periods=3).std()
+        season_fluctuation = float(group["Late_xGA"].std()) if len(group) > 1 else 0.0
+        group["Typical_Fluctuation"] = group["Rolling_Fluctuation"].fillna(season_fluctuation).fillna(0.0)
+        group["Spike_Threshold"] = group["Rolling_Avg"] + group["Typical_Fluctuation"]
+        group["Spike"] = np.where(
+            group["Rolling_Avg"].notna(),
+            group["Late_xGA"] > group["Spike_Threshold"],
+            False,
+        )
+        frames.append(group)
+
+    return pd.concat(frames, ignore_index=True)
+
+
+def render_late_xga_volatility_sandbox(game_phase):
+    volatility = cached_team_late_xga_volatility(game_phase, get_master_report_version())
+    st.subheader("Team Late-xGA Volatility Sandbox")
+    if volatility.empty:
+        st.info(f"No team late-xGA data is available for {game_phase.lower()} games.")
+        return
+
+    teams = sorted(volatility["Team"].dropna().unique())
+    selected_team = st.selectbox("Team", teams)
+    team_df = volatility[volatility["Team"] == selected_team].sort_values("Date").copy()
+    usable = team_df[team_df["Rolling_Avg"].notna()].copy()
+
+    avg_late_xga = float(team_df["Late_xGA"].mean()) if not team_df.empty else 0.0
+    median_late_xga = float(team_df["Late_xGA"].median()) if not team_df.empty else 0.0
+    typical_fluctuation = float(team_df["Late_xGA"].std()) if len(team_df) > 1 else 0.0
+    spike_rate = float(usable["Spike"].mean()) if not usable.empty else 0.0
+    latest_threshold = float(team_df["Spike_Threshold"].dropna().iloc[-1]) if team_df["Spike_Threshold"].notna().any() else 0.0
+
+    vm1, vm2, vm3, vm4, vm5 = st.columns(5)
+    vm1.metric("Games", f"{len(team_df):,}")
+    vm2.metric("Avg Late xGA", f"{avg_late_xga:.3f}")
+    vm3.metric("Median Late xGA", f"{median_late_xga:.3f}")
+    vm4.metric("Typical Fluctuation", f"{typical_fluctuation:.3f}")
+    vm5.metric("Spike Rate", f"{spike_rate * 100:.1f}%", delta=f"Latest threshold {latest_threshold:.3f}")
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=team_df["Date"],
+        y=team_df["Late_xGA"],
+        mode="lines+markers",
+        name="Late xGA",
+        line=dict(color="#1f77b4", width=2),
+    ))
+    fig.add_trace(go.Scatter(
+        x=team_df["Date"],
+        y=team_df["Rolling_Avg"],
+        mode="lines",
+        name="Rolling baseline",
+        line=dict(color="#2ca02c", width=2),
+    ))
+    fig.add_trace(go.Scatter(
+        x=team_df["Date"],
+        y=team_df["Spike_Threshold"],
+        mode="lines",
+        name="Spike threshold",
+        line=dict(color="#d62728", width=2, dash="dot"),
+    ))
+    spike_df = team_df[team_df["Spike"]]
+    if not spike_df.empty:
+        fig.add_trace(go.Scatter(
+            x=spike_df["Date"],
+            y=spike_df["Late_xGA"],
+            mode="markers",
+            name="Outside normal range",
+            marker=dict(color="#d62728", size=11, symbol="x"),
+        ))
+    fig.update_layout(
+        height=430,
+        xaxis_title="Game date",
+        yaxis_title="Late xGA",
+        margin=dict(l=50, r=40, t=30, b=55),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    with st.expander("Game Values", expanded=False):
+        display = team_df[["Date", "Late_xGA", "Rolling_Avg", "Typical_Fluctuation", "Spike_Threshold", "Spike"]].copy()
+        display["Date"] = display["Date"].apply(format_date)
+        st.dataframe(display, use_container_width=True, hide_index=True)
+
+    leaderboard_rows = []
+    for team, group in volatility.groupby("Team"):
+        group = group.sort_values("Date")
+        usable_group = group[group["Rolling_Avg"].notna()]
+        spike_rate_value = float(usable_group["Spike"].mean()) if not usable_group.empty else 0.0
+        leaderboard_rows.append({
+            "Team": team,
+            "Games": int(len(group)),
+            "Avg Late xGA": round(float(group["Late_xGA"].mean()), 3),
+            "Median Late xGA": round(float(group["Late_xGA"].median()), 3),
+            "Typical Fluctuation": round(float(group["Late_xGA"].std()) if len(group) > 1 else 0.0, 3),
+            "Spike Rate": f"{spike_rate_value * 100:.1f}%",
+            "Spike_Rate_Order": spike_rate_value,
+        })
+
+    st.subheader("League Overhead")
+    league_overhead = pd.DataFrame(leaderboard_rows).sort_values("Spike_Rate_Order", ascending=False)
+    st.dataframe(
+        league_overhead.drop(columns=["Spike_Rate_Order"]),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+def render_predictive_label_comparison():
+    proof = cached_late_xga_collapse_proof(get_master_report_version())
+    model_lift_by_profile = proof.get("model_lift_by_profile", pd.DataFrame())
+    profile_weight_optimizer = proof.get("profile_weight_optimizer", pd.DataFrame())
+    profile_weight_validation = proof.get("profile_weight_validation", pd.DataFrame())
+
+    st.subheader("Predictive Table by Team Volatility Profile")
+    st.caption(
+        "This uses the team recent baseline target and compares each goalie signal inside the team's volatility profile."
+    )
+
+    if model_lift_by_profile.empty:
+        st.info("No predictive table is available.")
+    else:
+        st.dataframe(
+            format_profile_model_lift_table(model_lift_by_profile),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    st.markdown("**Profile Weight Optimizer**")
+    if profile_weight_optimizer.empty:
+        st.info("No optimizer table is available.")
+    else:
+        st.dataframe(
+            format_profile_weight_optimizer_table(profile_weight_optimizer),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    st.markdown("**Validated Profile Weight Optimizer**")
+    if profile_weight_validation.empty:
+        st.info("No validated optimizer table is available.")
+    else:
+        st.dataframe(
+            format_profile_weight_validation_table(profile_weight_validation),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+
+st.set_page_config(layout="wide", page_title="SLC Dashboard")
+st.title("System Load Coefficient Dashboard")
+
+top_phase, top_update_button = st.columns([2, 1])
 with top_phase:
     game_phase = st.radio("Game Set", ["Regular Season", "Playoffs"], horizontal=True)
-with top_update_scope:
-    update_scope = st.selectbox("Update Scope", ["All Completed", "Regular Season", "Playoffs"])
 with top_update_button:
     st.write("")
     st.write("")
     update_requested = st.button("Update Local Data", type="primary")
 
 if update_requested:
-    game_type = {"All Completed": "all", "Regular Season": 2, "Playoffs": 3}[update_scope]
+    game_type = {"Regular Season": 2, "Playoffs": 3}[game_phase]
     with st.spinner("Fetching missing games and updating local reports. This can take a few minutes."):
         try:
             update_summary, update_log = run_dashboard_data_update(game_type)
@@ -185,6 +647,11 @@ if update_requested:
                 st.text(update_log)
         except Exception as exc:
             st.error(f"Local data update failed: {exc}")
+
+# Temporarily disabled while comparing pre-label and post-label predictive tables.
+# render_late_xga_volatility_sandbox(game_phase)
+render_predictive_label_comparison()
+st.stop()
 
 seed_audit = cached_goalie_audit("", game_phase, get_master_report_version())
 leaderboard = seed_audit["leaderboard"]
@@ -221,10 +688,70 @@ with tab_league:
         lm3.metric("Median Survival Grade", f"{league_context.get('pressure_survival_grade_median', 0):.0f}")
         lm4.metric("Median Relief Grade", f"{league_context.get('pressure_relief_grade_median', 0):.0f}")
 
+        proof = cached_late_xga_collapse_proof(get_master_report_version())
+        proof_summary = proof.get("summary", {})
+        proof_risk = proof.get("risk_by_schedule", pd.DataFrame())
+        model_lift = proof.get("model_lift", pd.DataFrame())
+
+        st.subheader("SLC Research Snapshot")
+        if proof_risk.empty:
+            st.info("Not enough league data is available to test late-xGA collapse risk.")
+        else:
+            normal_top15_lift = model_lift[
+                (model_lift["Target"] == "Above team recent baseline, next game") &
+                (model_lift["Schedule_Context"] == "Normal") &
+                (model_lift["Model"] == "Schedule + Load + SLC")
+            ] if not model_lift.empty else pd.DataFrame()
+            stressed_top15_lift = model_lift[
+                (model_lift["Target"] == "Above team recent baseline, next game") &
+                (model_lift["Schedule_Context"] == "Stressed") &
+                (model_lift["Model"] == "Schedule + Load + SLC")
+            ] if not model_lift.empty else pd.DataFrame()
+            cr1, cr2 = st.columns(2)
+            cr1.metric("Games Tested", f"{proof_summary.get('Goalie_Games', 0):,}")
+            if not normal_top15_lift.empty:
+                row = normal_top15_lift.iloc[0]
+                cr2.metric(
+                    "Normal Schedule Signal",
+                    f"{float(row.get('Lift_vs_Load_Baseline', 0)) * 100:+.1f} pts",
+                    delta="SLC lift vs schedule/load",
+                )
+
+            if not stressed_top15_lift.empty:
+                stressed_lift = float(stressed_top15_lift.iloc[0].get("Lift_vs_Load_Baseline", 0)) * 100
+                if stressed_lift < 0:
+                    st.warning(
+                        "Current read: relief-weighted SLC is helping in normal schedule spots, "
+                        "but it still breaks in stressed schedule spots. That stressed-context problem is the next thing to solve."
+                    )
+                else:
+                    st.success(
+                        "Current read: SLC is adding signal after schedule/load context, including stressed schedule spots."
+                    )
+            else:
+                st.info("Current read: not enough stressed schedule rows are available for the compact signal check.")
+
+            with st.expander("Show Research Tables", expanded=False):
+                st.markdown("**Predictive Lift Comparison**")
+                st.caption(
+                    "Positive Lift vs Load means the added signal separated future collapse risk better than schedule and recent load alone."
+                )
+                if not model_lift.empty:
+                    st.dataframe(
+                        format_model_lift_table(model_lift),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                st.markdown("**Low-SLC vs High-SLC Collapse Rates**")
+                st.dataframe(
+                    format_collapse_proof_table(proof_risk),
+                    use_container_width=True,
+                    hide_index=True,
+                )
         league_columns = [
             "Rank", "Goalie", "Team", "Team_System_Profile", "GP",
             "SLC_Grade", "SLC_Profile", "Pressure_Survival_Grade",
-            "Pressure_Relief_Grade", "Battery_Fit_Grade", "SLC_per_Sequence",
+            "Pressure_Relief_Grade", "Battery_Fit_Grade", "Pressure_Efficiency_per_Sequence",
             "Sequences_per_Game",
         ]
         display_league = qualified[league_columns].rename(columns={
@@ -234,10 +761,10 @@ with tab_league:
             "Pressure_Relief_Grade": "Pressure Relief",
             "Battery_Fit_Grade": "Battery Fit",
             "Team_System_Profile": "Team System",
-            "SLC_per_Sequence": "SLC / Sequence",
+            "Pressure_Efficiency_per_Sequence": "Pressure Efficiency",
             "Sequences_per_Game": "Sequences / Game",
         })
-        st.dataframe(display_league, hide_index=True)
+        st.dataframe(display_league, use_container_width=True, hide_index=True)
         st.download_button(
             "Download league leaderboard CSV",
             data=dataframe_csv(display_league),
@@ -287,7 +814,7 @@ with tab_audit:
         tp2.metric("Avg 40s Wall Breaches", f"{profile_row['Avg 40s Wall Breaches']:.3f}")
         tp3.metric("40s Wall Efficiency", f"{profile_row['40s Wall Efficiency']:.1f}%")
         tp4.metric("Avg Sequence Duration", f"{profile_row['Avg Sequence Duration']:.1f}s")
-        st.dataframe(team_profile, hide_index=True)
+        st.dataframe(team_profile, use_container_width=True, hide_index=True)
         st.caption(
             "This section profiles the team environment, not the goalie. "
             "Use it as context for what kind of goalie efficiency the system asks for."
@@ -306,27 +833,53 @@ with tab_audit:
     m4.metric("Battery Fit", f"{summary['Battery_Fit_Grade']:.0f}")
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("SLC / Sequence", f"{summary['SLC_per_Sequence']:.3f}", delta=f"{verdict['efficiency_delta']:+.3f} vs median")
+    c1.metric("Pressure Efficiency", f"{summary['Pressure_Efficiency_per_Sequence']:.3f}", delta=f"{verdict['efficiency_delta']:+.3f} vs median")
     c2.metric("Relief Capture", f"{summary['Relief_Capture_Rate']:.3f}", delta=f"{verdict['relief_capture_delta']:+.3f} vs median")
     c3.metric("Net Load / Sequence", f"{summary['Net_Load_per_Sequence']:.3f}", delta=f"{verdict['net_load_delta']:+.3f} vs median")
     c4.metric("Games", int(summary["GP"]))
 
+    st.subheader("SLC Component Breakdown")
+    st.caption(
+        "Survival is puck-stopping value. Relief is pressure cooling/reset value. "
+        "Pressure Cost is the burden that continued or returned to the team."
+    )
+    sc1, sc2, sc3, sc4 = st.columns(4)
+    sc1.metric("Survival / Game", f"{summary.get('Survival_Component_per_Game', 0):.3f}")
+    sc2.metric("Relief / Game", f"{summary.get('Relief_Component_per_Game', 0):.3f}")
+    sc3.metric("Pressure Cost / Game", f"{summary.get('Pressure_Cost_per_Game', 0):.3f}")
+    sc4.metric("Net Component / Game", f"{summary.get('Net_Component_per_Game', 0):.3f}")
+
+    if not game_log.empty:
+        component_columns = [
+            "Date", "Matchup", "SLC", "Raw_SLC", "SLC_Confidence", "Survival_Component",
+            "Relief_Component", "Pressure_Cost_Component",
+            "Net_Load_per_Sequence", "Sequences", "Shots",
+        ]
+        with st.expander("Game-Level SLC Components", expanded=False):
+            component_log = game_log.copy()
+            component_log["Date"] = component_log["Date"].apply(format_date)
+            st.dataframe(
+                component_log.sort_values("Date", ascending=False)[component_columns],
+                use_container_width=True,
+                hide_index=True,
+            )
+
     if not translation.empty:
         with st.expander("Plain-English Metric Translation", expanded=False):
-            st.dataframe(translation, hide_index=True)
+            st.dataframe(translation,use_container_width=True, hide_index=True)
 
     with st.expander("Counting Stat Ingredients", expanded=False):
-        st.dataframe(evidence, hide_index=True)
+        st.dataframe(evidence, use_container_width=True, hide_index=True)
 
     if not context.empty:
         with st.expander("League Context", expanded=False):
-            st.dataframe(context, hide_index=True)
+            st.dataframe(context, use_container_width=True, hide_index=True)
 
     st.subheader("Game Pressure Survival vs Pressure Relief")
     if game_log.empty:
         st.info("No game-level efficiency data is available for this goalie and game set.")
     else:
-        st.plotly_chart(build_efficiency_workload_chart(game_log, summary, verdict))
+        st.plotly_chart(build_efficiency_workload_chart(game_log, summary, verdict), use_container_width=True)
         st.caption(
             "Each dot is one game. Higher means better pressure survival; farther right means more pressure relief. "
             "The best efficiency profile lives toward the upper-right."
@@ -334,7 +887,7 @@ with tab_audit:
 
     st.subheader("Games")
     game_columns = [
-        "Date", "Matchup", "SLC", "SLC_per_Sequence",
+        "Date", "Matchup", "SLC_Grade", "Pressure_Efficiency_per_Sequence",
         "Pressure_Survival", "Relief_Efficiency", "Relief_Capture_Rate",
         "Net_Load_per_Sequence", "Sequences", "Shots", "Sovereignty",
     ]
@@ -348,10 +901,12 @@ with tab_audit:
         display_log["Date"] = display_log["Date"].apply(format_date)
         st.dataframe(
             display_log.sort_values("Date", ascending=False)[game_columns],
+            use_container_width=True
         )
         with st.expander("Game-Level Counting Details", expanded=False):
             st.dataframe(
                 display_log.sort_values("Date", ascending=False)[detail_game_columns],
+                use_container_width=True,
             )
     else:
         st.info("No games are available for this goalie and game set.")
@@ -367,7 +922,7 @@ with tab_audit:
         if selected_periods.empty:
             st.info("No period detail is available for that game.")
         else:
-            st.dataframe(selected_periods, hide_index=True)
+            st.dataframe(selected_periods, use_container_width=True, hide_index=True)
 
     render_downloads(goalie_key, game_phase, game_log, evidence)
 

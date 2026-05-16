@@ -3,6 +3,7 @@ import pandas as pd
 from utility import (
     _get_goalie_team_abbrev,
     _load_raw_game,
+    calculate_slc_score,
     calculate_service_tax,
     current_period_score,
     current_report_score,
@@ -11,6 +12,7 @@ from utility import (
     get_team_sequence_data,
     get_goalie_matchup_label,
     load_master_reports,
+    report_team_profile,
 )
 
 
@@ -36,6 +38,12 @@ def _pressure_survival_score(stats):
 
 
 def _relief_efficiency_score(stats):
+    if all(key in stats for key in ["Survival_Event", "Relief_Event", "Pressure_Cost_Event"]):
+        _, scored_stats = calculate_slc_score(stats, team_profile=report_team_profile(report))
+        relief_rate = float(scored_stats.get("Relief_Rate", 0) or 0)
+        pressure_cost_rate = float(scored_stats.get("Pressure_Cost_Rate", 0) or 0)
+        return round((relief_rate - pressure_cost_rate) * 10, 3)
+
     sequences = stats.get("Sequences", 0)
     if not sequences:
         return 0.0
@@ -117,8 +125,8 @@ def _assign_slc_grades(leaderboard, master_report, game_phase):
     graded["Team_System_Profile"] = system_profiles
     graded["Battery_Fit_Grade"] = battery_grades
     graded["SLC_Grade"] = (
-        (graded["Pressure_Survival_Grade"] * 0.40) +
-        (graded["Pressure_Relief_Grade"] * 0.40) +
+        (graded["Pressure_Survival_Grade"] * 0.35) +
+        (graded["Pressure_Relief_Grade"] * 0.45) +
         (graded["Battery_Fit_Grade"] * 0.20)
     ).round(0)
     graded["SLC_Profile"] = graded.apply(
@@ -186,6 +194,9 @@ def _empty_goalie_totals(goalie_key, first_report):
         "iGvA": 0,
         "iGvA_SH": 0,
         "iTkA": 0,
+        "Survival_Event": 0.0,
+        "Relief_Event": 0.0,
+        "Pressure_Cost_Event": 0.0,
     }
 
 
@@ -217,6 +228,9 @@ def _add_report_to_totals(totals, report):
     totals["Tax"] += tax
     totals["xG"] += stats.get("xG", 0)
     totals["xS"] += stats.get("xS", 0)
+    totals["Survival_Event"] += stats.get("Survival_Event", stats.get("SLC_event", 0))
+    totals["Relief_Event"] += stats.get("Relief_Event", 0)
+    totals["Pressure_Cost_Event"] += stats.get("Pressure_Cost_Event", 0)
 
     for key in ["NPW", "NPW_SH", "UA", "UA_SH", "RP", "RP_SH", "iGvA", "iGvA_SH", "iTkA"]:
         totals[key] += stats.get(key, 0)
@@ -234,7 +248,7 @@ def _finalize_totals(totals):
     totals["Pressure_Survival_Total"] = round(totals["Pressure_Survival_Total"], 3)
     totals["Relief_Efficiency_Total"] = round(totals["Relief_Efficiency_Total"], 3)
     totals["Avg_SLC"] = _safe_div(totals["Total_SLC"], totals["GP"])
-    totals["SLC_per_Sequence"] = _safe_div(totals["Ranking_Total_SLC"], totals["Ranking_Sequences"])
+    totals["Pressure_Efficiency_per_Sequence"] = _safe_div(totals["Ranking_Total_SLC"], totals["Ranking_Sequences"])
     totals["Pressure_Survival_per_Game"] = _safe_div(totals["Pressure_Survival_Total"], totals["GP"])
     totals["Relief_Efficiency_per_Game"] = _safe_div(totals["Relief_Efficiency_Total"], totals["GP"])
     totals["Net_Load"] = round(totals["Service"] - totals["Tax"], 3)
@@ -244,6 +258,13 @@ def _finalize_totals(totals):
     totals["Relief_Capture_Rate"] = _relief_capture_rate(totals)
     totals["Sequences_per_Game"] = _safe_div(sequences, totals["GP"])
     totals["Shots_per_Game"] = _safe_div(shots, totals["GP"])
+    totals["Survival_Component_per_Game"] = _safe_div(totals["Survival_Event"], totals["GP"])
+    totals["Relief_Component_per_Game"] = _safe_div(totals["Relief_Event"], totals["GP"])
+    totals["Pressure_Cost_per_Game"] = _safe_div(totals["Pressure_Cost_Event"], totals["GP"])
+    totals["Net_Component_per_Game"] = _safe_div(
+        totals["Survival_Event"] + totals["Relief_Event"] - totals["Pressure_Cost_Event"],
+        totals["GP"],
+    )
     totals["SV%"] = round(actual_sv, 3) if shots else 0.0
     totals["Sovereignty"] = round((actual_sv - expected_sv) * 100, 3) if shots else 0.0
     totals["Reset_Ratio"] = _safe_div(totals["Saves"], sequences)
@@ -263,6 +284,7 @@ def _build_goalie_game_log(goalie_key, games, game_phase):
         shots = saves + goals
         sequences = stats.get("Sequences", 0)
         service, tax = calculate_service_tax(stats, include_baseline=True)
+        _, scored_stats = calculate_slc_score(stats)
         slc = current_report_score(report)
         x_saves = stats.get("xS", 0) or shots - stats.get("xG", 0)
         actual_sv = _safe_div(saves, shots)
@@ -275,7 +297,7 @@ def _build_goalie_game_log(goalie_key, games, game_phase):
             "Game_ID": str(game_id),
             "SLC": slc,
             "Sequences": sequences,
-            "SLC_per_Sequence": _safe_div(slc, sequences),
+            "Pressure_Efficiency_per_Sequence": _safe_div(slc, sequences),
             "Pressure_Survival": _pressure_survival_score(stats),
             "Relief_Efficiency": _relief_efficiency_score(stats),
             "Net_Load": net_load,
@@ -285,6 +307,11 @@ def _build_goalie_game_log(goalie_key, games, game_phase):
             "Tax": tax,
             "Tax_per_Sequence": _safe_div(tax, sequences),
             "Relief_Capture_Rate": _relief_capture_rate(stats),
+            "Survival_Component": stats.get("Survival_Event", stats.get("SLC_event", 0)),
+            "Relief_Component": stats.get("Relief_Event", 0),
+            "Pressure_Cost_Component": stats.get("Pressure_Cost_Event", 0),
+            "Raw_SLC": scored_stats.get("Raw_SLC", slc),
+            "SLC_Confidence": scored_stats.get("SLC_Confidence", 1.0),
             "Shots": shots,
             "Sovereignty": round((actual_sv - expected_sv) * 100, 3) if shots else 0.0,
             "NPW": stats.get("NPW", 0),
@@ -302,6 +329,11 @@ def _build_goalie_game_log(goalie_key, games, game_phase):
 
     game_log = pd.DataFrame(rows)
     game_log["Date"] = pd.to_datetime(game_log["Date"], errors="coerce")
+    # Calculate per-game grade percentiles for survival and relief, then combine
+    if not game_log.empty:
+        game_log["Game_Survival_Grade"] = _grade_series(game_log["Pressure_Survival"])
+        game_log["Game_Relief_Grade"] = _grade_series(game_log["Relief_Efficiency"])
+        game_log["SLC_Grade"] = ((game_log["Game_Survival_Grade"] + game_log["Game_Relief_Grade"]) / 2).round(0)
     return game_log.sort_values("Date")
 
 
@@ -500,12 +532,12 @@ def _build_phase_leaderboard(master_report, game_phase):
         return pd.DataFrame()
 
     leaderboard = pd.DataFrame(rows)
-    leaderboard["SLC_Efficiency_Rank"] = leaderboard["SLC_per_Sequence"].rank(
+    leaderboard["Pressure_Efficiency_Rank"] = leaderboard["Pressure_Efficiency_per_Sequence"].rank(
         ascending=False,
         method="min"
     ).astype(int)
     leaderboard["Efficiency_Percentile"] = (
-        leaderboard["SLC_per_Sequence"].rank(pct=True) * 100
+        leaderboard["Pressure_Efficiency_per_Sequence"].rank(pct=True) * 100
     ).round(1)
     leaderboard = _assign_slc_grades(leaderboard, master_report, game_phase)
     return leaderboard.sort_values("SLC_Grade", ascending=False)
@@ -524,8 +556,8 @@ def _qualified_context_from_min_gp(leaderboard, min_gp):
     return {
         "min_gp": min_gp,
         "goalies": int(len(qualified)),
-        "slc_per_sequence_median": round(float(qualified["SLC_per_Sequence"].median()), 3),
-        "slc_per_sequence_mean": round(float(qualified["SLC_per_Sequence"].mean()), 3),
+        "pressure_efficiency_per_sequence_median": round(float(qualified["Pressure_Efficiency_per_Sequence"].median()), 3),
+        "pressure_efficiency_per_sequence_mean": round(float(qualified["Pressure_Efficiency_per_Sequence"].mean()), 3),
         "net_load_per_sequence_median": round(float(qualified["Net_Load_per_Sequence"].median()), 3),
         "service_per_sequence_median": round(float(qualified["Service_per_Sequence"].median()), 3),
         "tax_per_sequence_median": round(float(qualified["Tax_per_Sequence"].median()), 3),
@@ -793,11 +825,11 @@ def build_team_goalie_decision(team_abbrev, game_phase):
 
 def _build_verdict(goalie_row, leaderboard, game_phase):
     context = _qualified_context(leaderboard, game_phase)
-    league_slc_seq = context["slc_per_sequence_median"]
+    league_pressure_efficiency_seq = context["pressure_efficiency_per_sequence_median"]
     league_seq_game = context["sequences_per_game_median"]
     league_net_load_seq = context["net_load_per_sequence_median"]
     league_capture_rate = context["relief_capture_rate_median"]
-    efficiency_delta = float(goalie_row["SLC_per_Sequence"] - league_slc_seq)
+    efficiency_delta = float(goalie_row["Pressure_Efficiency_per_Sequence"] - league_pressure_efficiency_seq)
     net_load_delta = float(goalie_row["Net_Load_per_Sequence"] - league_net_load_seq)
     capture_delta = float(goalie_row["Relief_Capture_Rate"] - league_capture_rate)
     low_volume = goalie_row["Sequences_per_Game"] < league_seq_game
@@ -818,11 +850,11 @@ def _build_verdict(goalie_row, leaderboard, game_phase):
         "text": verdict,
         "slc_grade": grade,
         "slc_profile": profile,
-        "league_slc_per_sequence": round(league_slc_seq, 3),
+        "league_pressure_efficiency_per_sequence": round(league_pressure_efficiency_seq, 3),
         "league_sequences_per_game": round(league_seq_game, 3),
         "league_net_load_per_sequence": round(league_net_load_seq, 3),
         "league_relief_capture_rate": round(league_capture_rate, 3),
-        "league_slc_per_sequence_mean": context["slc_per_sequence_mean"],
+        "league_pressure_efficiency_per_sequence_mean": context["pressure_efficiency_per_sequence_mean"],
         "league_sequences_per_game_mean": context["sequences_per_game_mean"],
         "context_min_gp": context["min_gp"],
         "context_goalies": context["goalies"],
@@ -858,9 +890,9 @@ def _build_evidence_rows(goalie_row):
             "What it means": "How well the goalie profile fits the team's pressure environment",
         },
         {
-            "Evidence": "SLC / Sequence",
-            "Value": goalie_row["SLC_per_Sequence"],
-            "What it means": "Underlying pressure-maintenance rate",
+            "Evidence": "Pressure Efficiency",
+            "Value": goalie_row["Pressure_Efficiency_per_Sequence"],
+            "What it means": "How well the goalie handles each pressure event in isolation.",
         },
         {
             "Evidence": "Net Load / Sequence",
@@ -888,7 +920,7 @@ def _build_evidence_rows(goalie_row):
             "What it means": "Workload context, not the ranking itself",
         },
         {
-            "Evidence": "Total SLC",
+            "Evidence": "Total Pressure Efficiency",
             "Value": goalie_row["Total_SLC"],
             "What it means": "Accumulated season value",
         },
@@ -964,7 +996,7 @@ def _build_context_rows(goalie_row, context):
 
 
 def _build_translation(goalie_row, context):
-    efficiency_delta = round(goalie_row["SLC_per_Sequence"] - context["slc_per_sequence_median"], 3)
+    efficiency_delta = round(goalie_row["Pressure_Efficiency_per_Sequence"] - context["pressure_efficiency_per_sequence_median"], 3)
     volume_delta = round(goalie_row["Sequences_per_Game"] - context["sequences_per_game_median"], 3)
     net_delta = round(goalie_row["Net_Load_per_Sequence"] - context["net_load_per_sequence_median"], 3)
     capture_delta = round(goalie_row["Relief_Capture_Rate"] - context["relief_capture_rate_median"], 3)
@@ -973,7 +1005,7 @@ def _build_translation(goalie_row, context):
     volume_read = "higher" if volume_delta >= 0 else "lower"
     net_read = "above" if net_delta >= 0 else "below"
     capture_read = "above" if capture_delta >= 0 else "below"
-    mean_read = "above" if goalie_row["SLC_per_Sequence"] >= context["slc_per_sequence_mean"] else "below"
+    mean_read = "above" if goalie_row["Pressure_Efficiency_per_Sequence"] >= context["pressure_efficiency_per_sequence_mean"] else "below"
 
     return pd.DataFrame([
         {
@@ -986,14 +1018,14 @@ def _build_translation(goalie_row, context):
         {
             "Question": "Is the efficiency real?",
             "Answer": (
-                f"{goalie_row['SLC_per_Sequence']:.3f} SLC/sequence is {abs(efficiency_delta):.3f} "
+                f"{goalie_row['Pressure_Efficiency_per_Sequence']:.3f} Pressure Efficiency is {abs(efficiency_delta):.3f} "
                 f"{efficiency_read} the qualified median."
             ),
         },
         {
             "Question": "Is this elite-level?",
             "Answer": (
-                f"The qualified mean is {context['slc_per_sequence_mean']:.3f}; this goalie is {mean_read} "
+                f"The qualified mean is {context['pressure_efficiency_per_sequence_mean']:.3f}; this goalie is {mean_read} "
                 "that top-end-pulled benchmark."
             ),
         },
@@ -1077,7 +1109,7 @@ def build_selected_game_periods(goalie_key, game_id):
             "Period": f"P{period}",
             "SLC": slc,
             "Sequences": sequences,
-            "SLC_per_Sequence": _safe_div(slc, sequences),
+            "Pressure_Efficiency_per_Sequence": _safe_div(slc, sequences),
             "Pressure_Survival": _pressure_survival_score(stats),
             "Relief_Efficiency": _relief_efficiency_score(stats),
             "Net_Load": net_load,

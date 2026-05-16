@@ -8,6 +8,7 @@ from slc_by_period_progression import analyze_progression_from_raw
 from utility import (
     RAW_DATA_DIR,
     SCHEDULE_FILE,
+    attach_team_context_to_master,
     fetch_and_vault_raw_data,
     load_master_reports,
     prepare_report_for_master,
@@ -216,6 +217,7 @@ def update_local_data(season="now", game_type=2, local_raw_only=False):
             processed_reports += 1
             print(f"Processed {goalie_name}: {game.get('gameDate')} game {game_id}")
 
+    master, team_context_updates = attach_team_context_to_master(master)
     save_schedule(schedule)
     save_master_reports(master)
 
@@ -226,6 +228,7 @@ def update_local_data(season="now", game_type=2, local_raw_only=False):
     print(f"Raw games fetched:           {fetched_raw}")
     print(f"New goalie reports written:  {processed_reports}")
     print(f"Existing reports skipped:    {skipped_existing_reports}")
+    print(f"Team contexts updated:       {team_context_updates}")
     print(f"No raw/play data skipped:    {skipped_no_raw}")
     print(f"No active goalies skipped:   {skipped_no_goalies}")
     return {
@@ -234,6 +237,7 @@ def update_local_data(season="now", game_type=2, local_raw_only=False):
         "raw_games_fetched": fetched_raw,
         "processed_reports": processed_reports,
         "existing_reports_skipped": skipped_existing_reports,
+        "team_context_updates": team_context_updates,
         "no_raw_skipped": skipped_no_raw,
         "no_active_goalies_skipped": skipped_no_goalies,
     }

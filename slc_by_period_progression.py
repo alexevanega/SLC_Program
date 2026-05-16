@@ -18,6 +18,9 @@ def _empty_period_stats():
         'xG': 0.0,
         'xS': 0.0,
         'SLC_event': 0.0,
+        'Survival_Event': 0.0,
+        'Relief_Event': 0.0,
+        'Pressure_Cost_Event': 0.0,
         'Pressure_Weight': 0.0,
         'Sequences': 0,
         'Lateral_Adjustments': 0,
@@ -214,9 +217,18 @@ def _event_slc_contribution(event, prev_event, system_state, is_sh=False):
         tax *= 1.5
 
     if result == 1:
-        slc_event = (1 - adjusted_xs) * tax
+        survival_event = 1 - adjusted_xs
     else:
-        slc_event = (0 - adjusted_xs) / tax
+        survival_event = 0 - adjusted_xs
+
+    pressure_cost_event = max(tax - 1.0, 0.0)
+    if result == 0:
+        pressure_cost_event += 0.50
+    if breakdown:
+        pressure_cost_event += 0.35
+
+    relief_event = 0.0
+    slc_event = survival_event + relief_event - pressure_cost_event
 
     return {
         "base_xg": base_xg,
@@ -230,6 +242,9 @@ def _event_slc_contribution(event, prev_event, system_state, is_sh=False):
         "short_handed": is_sh,
         "breakdown": breakdown,
         "slc_event": slc_event,
+        "survival_event": survival_event,
+        "relief_event": relief_event,
+        "pressure_cost_event": pressure_cost_event,
         "result": result
     }
 
@@ -323,6 +338,9 @@ def analyze_progression_from_raw(raw_game_data, goalie_id):
         stats['xG'] += contribution["base_xg"]
         stats['xS'] += contribution["adjusted_xs"]
         stats['SLC_event'] += contribution["slc_event"]
+        stats['Survival_Event'] += contribution["survival_event"]
+        stats['Relief_Event'] += contribution["relief_event"]
+        stats['Pressure_Cost_Event'] += contribution["pressure_cost_event"]
         stats['Pressure_Weight'] += contribution["tax"]
         if contribution["short_handed"]:
             stats['SH_Shots'] = stats.get('SH_Shots', 0) + 1
@@ -377,8 +395,10 @@ def analyze_progression_from_raw(raw_game_data, goalie_id):
         if active_window and awaiting_possession and not is_shot_against_goalie and event != 'stoppage':
             if event in possession_events and event_team == goalie_team_id:
                 stats['NPW'] += 1
+                stats['Relief_Event'] += 0.80
                 if last_save_is_sh:
                     stats['NPW_SH'] += 1
+                    stats['Relief_Event'] += 0.20
                 active_window = False
                 awaiting_possession = False
                 teammate_touched_between = True
@@ -390,15 +410,19 @@ def analyze_progression_from_raw(raw_game_data, goalie_id):
         if event == 'giveaway' and details.get('playerId') == goalie_id:
             if is_sh: stats['iGvA_SH'] += 1
             else: stats['iGvA'] += 1
+            stats['Pressure_Cost_Event'] += 1.25 if is_sh else 0.75
         
         elif event == 'takeaway' and details.get('playerId') == goalie_id:
             stats['iTkA'] += 1
+            stats['Relief_Event'] += 0.75
 
         elif event == 'stoppage' and active_window:
             if (row['time_sec'] - last_save_time) <= 3:
                 stats['NPW'] += 1
+                stats['Relief_Event'] += 1.00
                 if last_save_is_sh:
                     stats['NPW_SH'] += 1
+                    stats['Relief_Event'] += 0.25
             active_window = False
             awaiting_possession = False
             teammate_touched_between = False
@@ -419,12 +443,16 @@ def analyze_progression_from_raw(raw_game_data, goalie_id):
                     dist = math.sqrt((x - (89 if x > 0 else -89))**2 + (y - 0)**2)
                     if dist < 25:
                         stats['RP'] += 1
+                        stats['Pressure_Cost_Event'] += 0.85
                         if is_sh:
                             stats['RP_SH'] += 1
+                            stats['Pressure_Cost_Event'] += 0.30
                     else:
                         stats['UA'] += 1
+                        stats['Pressure_Cost_Event'] += 0.45
                         if is_sh:
                             stats['UA_SH'] += 1
+                            stats['Pressure_Cost_Event'] += 0.20
             
             stats['S_saves'] += 1
             last_save_time = row['time_sec']
@@ -438,12 +466,16 @@ def analyze_progression_from_raw(raw_game_data, goalie_id):
             current_zone = details.get('zoneCode')
             if current_zone == 'D':
                 stats['UA'] += 1
+                stats['Pressure_Cost_Event'] += 0.45
                 if last_save_is_sh:
                     stats['UA_SH'] += 1
+                    stats['Pressure_Cost_Event'] += 0.20
             else:
                 stats['NPW'] += 1
+                stats['Relief_Event'] += 0.80
                 if last_save_is_sh:
                     stats['NPW_SH'] += 1
+                    stats['Relief_Event'] += 0.20
             active_window = False
             awaiting_possession = False
             teammate_touched_between = False
@@ -462,6 +494,9 @@ def compile_final_report(game_id, goalie_id, progression):
         p_stats['xG'] = round(float(p_stats.get('xG', 0)), 4)
         p_stats['xS'] = round(float(p_stats.get('xS', 0)), 4)
         p_stats['SLC_event'] = round(float(p_stats.get('SLC_event', 0)), 4)
+        p_stats['Survival_Event'] = round(float(p_stats.get('Survival_Event', 0)), 4)
+        p_stats['Relief_Event'] = round(float(p_stats.get('Relief_Event', 0)), 4)
+        p_stats['Pressure_Cost_Event'] = round(float(p_stats.get('Pressure_Cost_Event', 0)), 4)
         p_stats['Pressure_Weight'] = round(float(p_stats.get('Pressure_Weight', 0)), 4)
         
         score, _ = calculate_slc_score(p_stats)
@@ -483,6 +518,9 @@ def compile_final_report(game_id, goalie_id, progression):
     total_stats['xG'] = round(float(total_stats.get('xG', 0)), 4)
     total_stats['xS'] = round(float(total_stats.get('xS', 0)), 4)
     total_stats['SLC_event'] = round(float(total_stats.get('SLC_event', 0)), 4)
+    total_stats['Survival_Event'] = round(float(total_stats.get('Survival_Event', 0)), 4)
+    total_stats['Relief_Event'] = round(float(total_stats.get('Relief_Event', 0)), 4)
+    total_stats['Pressure_Cost_Event'] = round(float(total_stats.get('Pressure_Cost_Event', 0)), 4)
     total_stats['Pressure_Weight'] = round(float(total_stats.get('Pressure_Weight', 0)), 4)
     total_stats['Sequence_Fatigue'] = round(float(total_stats.get('Sequence_Fatigue', 0)), 4)
     total_stats['xG_Calibration'] = round(sum(calibration_values) / len(calibration_values), 4) if calibration_values else 1.0
