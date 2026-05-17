@@ -32,24 +32,24 @@ SLC_PRESSURE_COST_WEIGHT = 0.55
 
 PROFILE_SLC_WEIGHTS = {
     "Stable": {
-        "survival": 0.81,
-        "relief": 0.09,
-        "pressure_cost": 0.10,
+        "survival": 0.17,
+        "relief": 0.54,
+        "pressure_cost": 0.29,
     },
     "Brittle": {
-        "survival": 0.21,
-        "relief": 0.08,
-        "pressure_cost": 0.71,
+        "survival": 0.87,
+        "relief": 0.02,
+        "pressure_cost": 0.11,
     },
     "Controlled Chaos": {
-        "survival": 0.57,
-        "relief": 0.09,
-        "pressure_cost": 0.34,
+        "survival": 0.34,
+        "relief": 0.11,
+        "pressure_cost": 0.55,
     },
     "Volatile": {
-        "survival": 0.24,
+        "survival": 1.0,
         "relief": 0.0,
-        "pressure_cost": 0.76,
+        "pressure_cost": 0.0,
     },
 }
 

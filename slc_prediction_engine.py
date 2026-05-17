@@ -121,28 +121,34 @@ def _attach_team_volatility_profiles(df):
         rolling_avg = group["Late_xGA"].shift(1).rolling(5, min_periods=3).mean()
         rolling_fluctuation = group["Late_xGA"].shift(1).rolling(5, min_periods=3).std()
         season_fluctuation = float(group["Late_xGA"].std()) if len(group) > 1 else 0.0
-        typical_fluctuation = rolling_fluctuation.fillna(season_fluctuation).fillna(0.0)
-        spike_threshold = rolling_avg + typical_fluctuation
-        usable = rolling_avg.notna()
-        spike_rate = float((group.loc[usable, "Late_xGA"] > spike_threshold.loc[usable]).mean()) if usable.any() else 0.0
+        group["Rest_Days"] = group["Date"].diff().dt.days.clip(lower=0, upper=10)
+        group["Games_Last_7"] = [
+            int((group.loc[: i - 1, "Date"] >= row["Date"] - pd.Timedelta(days=7)).sum())
+            for i, row in group.iterrows()
+        ]
+        stressed = group[(group["Games_Last_7"] >= 3) | (group["Rest_Days"] <= 1)]
+        normal = group[(group["Games_Last_7"] < 3) & ((group["Rest_Days"] > 1) | group["Rest_Days"].isna())]
+        stressed_late_xga = float(stressed["Late_xGA"].mean()) if not stressed.empty else float(group["Late_xGA"].mean())
+        normal_late_xga = float(normal["Late_xGA"].mean()) if not normal.empty else float(group["Late_xGA"].mean())
+        load_sensitivity = stressed_late_xga - normal_late_xga
         team_rows.append({
             "Team": team,
             "Team_Fluctuation": season_fluctuation,
-            "Team_Spike_Rate": spike_rate,
+            "Team_Load_Sensitivity": load_sensitivity,
         })
 
     profiles = pd.DataFrame(team_rows)
     fluctuation_line = profiles["Team_Fluctuation"].median()
-    spike_line = profiles["Team_Spike_Rate"].median()
+    load_sensitivity_line = profiles["Team_Load_Sensitivity"].median()
 
     def label_profile(row):
         high_fluctuation = row["Team_Fluctuation"] >= fluctuation_line
-        high_spike = row["Team_Spike_Rate"] >= spike_line
-        if not high_fluctuation and not high_spike:
+        high_load_sensitivity = row["Team_Load_Sensitivity"] >= load_sensitivity_line
+        if not high_fluctuation and not high_load_sensitivity:
             return "Stable"
-        if not high_fluctuation and high_spike:
+        if not high_fluctuation and high_load_sensitivity:
             return "Brittle"
-        if high_fluctuation and not high_spike:
+        if high_fluctuation and not high_load_sensitivity:
             return "Controlled Chaos"
         return "Volatile"
 
@@ -186,29 +192,37 @@ def build_team_context_by_game(master_report=None):
         group = group.sort_values(["Date", "Game_ID"]).reset_index(drop=True)
         group["Rolling_Avg"] = group["Late_xGA"].shift(1).rolling(5, min_periods=3).mean()
         group["Typical_Fluctuation"] = group["Late_xGA"].shift(1).rolling(5, min_periods=3).std()
-        group["Spike_Threshold"] = group["Rolling_Avg"] + group["Typical_Fluctuation"]
-        group["Spike"] = np.where(
-            group["Rolling_Avg"].notna(),
-            group["Late_xGA"] > group["Spike_Threshold"],
-            np.nan,
-        )
-        group["Spike_Rate"] = group["Spike"].shift(1).expanding(min_periods=3).mean()
+        group["Rest_Days"] = group["Date"].diff().dt.days.clip(lower=0, upper=10)
+        group["Games_Last_7"] = [
+            int((group.loc[: i - 1, "Date"] >= row["Date"] - pd.Timedelta(days=7)).sum())
+            for i, row in group.iterrows()
+        ]
+        group["Stressed_Game"] = (group["Games_Last_7"] >= 3) | (group["Rest_Days"] <= 1)
+        prior_stressed_mean = []
+        prior_normal_mean = []
+        for i, row in group.iterrows():
+            prior = group.loc[: i - 1]
+            stressed_prior = prior[prior["Stressed_Game"]]
+            normal_prior = prior[~prior["Stressed_Game"]]
+            prior_stressed_mean.append(float(stressed_prior["Late_xGA"].mean()) if len(stressed_prior) >= 2 else np.nan)
+            prior_normal_mean.append(float(normal_prior["Late_xGA"].mean()) if len(normal_prior) >= 2 else np.nan)
+        group["Load_Sensitivity"] = np.array(prior_stressed_mean) - np.array(prior_normal_mean)
         frames.append(group)
 
     context = pd.concat(frames, ignore_index=True)
     fluctuation_line = context["Typical_Fluctuation"].median()
-    spike_line = context["Spike_Rate"].median()
+    load_sensitivity_line = context["Load_Sensitivity"].median()
 
     def label_profile(row):
-        if pd.isna(row["Typical_Fluctuation"]) or pd.isna(row["Spike_Rate"]):
+        if pd.isna(row["Typical_Fluctuation"]) or pd.isna(row["Load_Sensitivity"]):
             return "Unknown"
         high_fluctuation = row["Typical_Fluctuation"] >= fluctuation_line
-        high_spike = row["Spike_Rate"] >= spike_line
-        if not high_fluctuation and not high_spike:
+        high_load_sensitivity = row["Load_Sensitivity"] >= load_sensitivity_line
+        if not high_fluctuation and not high_load_sensitivity:
             return "Stable"
-        if not high_fluctuation and high_spike:
+        if not high_fluctuation and high_load_sensitivity:
             return "Brittle"
-        if high_fluctuation and not high_spike:
+        if high_fluctuation and not high_load_sensitivity:
             return "Controlled Chaos"
         return "Volatile"
 
@@ -220,7 +234,7 @@ def build_team_context_by_game(master_report=None):
             "volatility_profile": row["Volatility_Profile"],
             "late_xga_rolling_avg": round(float(row["Rolling_Avg"]), 4) if pd.notna(row["Rolling_Avg"]) else None,
             "typical_fluctuation": round(float(row["Typical_Fluctuation"]), 4) if pd.notna(row["Typical_Fluctuation"]) else None,
-            "spike_rate": round(float(row["Spike_Rate"]), 4) if pd.notna(row["Spike_Rate"]) else None,
+            "load_sensitivity": round(float(row["Load_Sensitivity"]), 4) if pd.notna(row["Load_Sensitivity"]) else None,
         }
     return context_map
 

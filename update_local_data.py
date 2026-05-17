@@ -6,13 +6,13 @@ import time
 
 import requests
 
+from slc_prediction_engine import attach_team_context_to_master
 from slc_by_period_progression import analyze_progression_from_raw
 from utility import (
     BASE_DATA_DIR,
     RAW_DATA_BASE_DIR,
     RAW_DATA_DIR,
     SCHEDULE_FILE,
-    attach_team_context_to_master,
     fetch_and_vault_raw_data,
     load_master_reports,
     prepare_report_for_master,
